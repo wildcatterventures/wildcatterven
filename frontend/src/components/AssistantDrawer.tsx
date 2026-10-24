@@ -27,6 +27,8 @@ import { DemoBadge } from "./DemoBadge";
 
 interface AssistantDrawerProps {
   isOpen: boolean;
+  initialQuery?: string;
+  onClearInitialQuery?: () => void;
   onClose: () => void;
   onSelectCollege: (collegeId: string) => void;
 }
@@ -121,6 +123,8 @@ function cleanAssistantReply(
 
 export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   isOpen,
+  initialQuery,
+  onClearInitialQuery,
   onClose,
   onSelectCollege,
 }) => {
@@ -139,6 +143,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const stopListeningRef = useRef<(() => void) | null>(null);
+  const baseInputRef = useRef<string>("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -146,6 +151,13 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isOpen && initialQuery && initialQuery.trim()) {
+      handleSendMessage(initialQuery.trim());
+      onClearInitialQuery?.();
+    }
+  }, [isOpen, initialQuery]);
 
   useEffect(() => {
     return () => {
@@ -264,24 +276,26 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
         setVoiceError("Speech recognition is not supported in this browser. Please type your query.");
         return;
       }
+      baseInputRef.current = input.trim();
       setIsListening(true);
       const stopFn = startSpeechRecognition({
         onStart: () => {
           setIsListening(true);
           setVoiceError(null);
         },
-        onTranscript: (transcript, isFinal) => {
-          setInput(transcript);
-          if (isFinal) {
-            setIsListening(false);
-          }
+        onTranscript: (transcript) => {
+          const base = baseInputRef.current;
+          const combined = base ? `${base} ${transcript.trim()}` : transcript;
+          setInput(combined);
         },
         onError: (errText) => {
           setIsListening(false);
+          stopListeningRef.current = null;
           setVoiceError(errText);
         },
         onEnd: () => {
           setIsListening(false);
+          stopListeningRef.current = null;
         },
       });
       stopListeningRef.current = stopFn;
@@ -303,8 +317,8 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
               Campus Intelligence
             </h2>
             <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>FastAPI Database Agent</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Groq LLM Active</span>
             </div>
           </div>
         </div>
@@ -555,7 +569,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
                 )}
                 {m.providerUsed && (
                   <span className="text-[10px] font-mono text-charcoal-muted/70">
-                    Engine: {m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
+                    Engine: {m.providerUsed === "groq" ? "Groq LLM (Hosted)" : m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
                   </span>
                 )}
               </div>

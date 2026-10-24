@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Mic, MicOff, ArrowRight, BookOpen, MessageSquareQuote, Shield } from "lucide-react";
+import { Search, Mic, MicOff, ArrowRight, BookOpen, MessageSquareQuote, Shield, Sparkles } from "lucide-react";
 
 import { isSpeechRecognitionSupported, startSpeechRecognition } from "../../lib/voice";
 
@@ -20,6 +20,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const stopListeningRef = useRef<(() => void) | null>(null);
+  const baseTextRef = useRef<string>("");
 
   useEffect(() => {
     return () => {
@@ -40,34 +41,62 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
         setVoiceError("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
         return;
       }
+      baseTextRef.current = query.trim();
       setIsListening(true);
       const stop = startSpeechRecognition({
         onStart: () => {
           setIsListening(true);
           setVoiceError(null);
         },
-        onTranscript: (transcript, isFinal) => {
-          setQuery(transcript);
-          if (isFinal) {
-            setIsListening(false);
-          }
+        onTranscript: (transcript) => {
+          const base = baseTextRef.current;
+          const combined = base ? `${base} ${transcript.trim()}` : transcript;
+          setQuery(combined);
         },
         onError: (errorMsg) => {
           setIsListening(false);
+          stopListeningRef.current = null;
           setVoiceError(errorMsg);
         },
         onEnd: () => {
           setIsListening(false);
+          stopListeningRef.current = null;
         },
       });
       stopListeningRef.current = stop;
     }
   };
 
+  const isConversational = (text: string) => {
+    const lower = text.toLowerCase().trim();
+    return (
+      lower.startsWith("what") ||
+      lower.startsWith("how") ||
+      lower.startsWith("why") ||
+      lower.startsWith("tell") ||
+      lower.startsWith("can") ||
+      lower.startsWith("is ") ||
+      lower.startsWith("which") ||
+      lower.startsWith("show me") ||
+      lower.startsWith("find me") ||
+      lower.includes("score of") ||
+      lower.includes("ratings at") ||
+      lower.includes("placements at") ||
+      lower.includes("hostels at") ||
+      lower.includes("reviews for") ||
+      lower.endsWith("?")
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim());
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return;
+
+    if (isConversational(cleanQuery)) {
+      onOpenAssistantWithQuery(cleanQuery);
+    } else {
+      onSearch(cleanQuery);
     }
   };
 
@@ -129,6 +158,19 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
                 }`}
               >
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const targetQuery = query.trim() || "What can you tell me about the colleges on Campus Uncut?";
+                  onOpenAssistantWithQuery(targetQuery);
+                }}
+                title="Ask Groq AI Assistant"
+                className="px-3 py-2 rounded bg-olive-light border border-olive/30 text-olive hover:bg-olive hover:text-paper text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ask AI</span>
               </button>
 
               <button type="submit" className="btn-primary py-2 px-4 text-xs font-semibold">

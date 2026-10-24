@@ -1,6 +1,18 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve backend .env dynamically regardless of execution CWD
+_backend_dir = Path(__file__).resolve().parent.parent.parent
+_backend_env = _backend_dir / ".env"
+_root_env = _backend_dir.parent / ".env"
+
+_env_candidates = [
+    str(_backend_env),
+    str(_root_env),
+    ".env",
+]
 
 
 class Settings(BaseSettings):
@@ -24,14 +36,14 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "mock"
     LLM_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "llama-3.3-70b-versatile"
-    LLM_TIMEOUT: float = 20.0
+    LLM_MODEL: str = "openai/gpt-oss-120b"
+    LLM_TIMEOUT: float = 25.0
 
     # CORS Origins (comma-separated string)
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_candidates,
         env_file_encoding="utf-8",
         extra="ignore",
     )

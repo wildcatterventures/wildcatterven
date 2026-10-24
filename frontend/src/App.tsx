@@ -33,6 +33,7 @@ export const App: React.FC = () => {
   // Modals and Assistant state
   const [isUnknownModalOpen, setIsUnknownModalOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantInitialQuery, setAssistantInitialQuery] = useState<string | undefined>(undefined);
 
   // Fetch initial preview colleges for homepage
   const fetchPreview = () => {
@@ -65,7 +66,8 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleOpenAssistantWithQuery = (_sampleQuery: string) => {
+  const handleOpenAssistantWithQuery = (sampleQuery: string) => {
+    setAssistantInitialQuery(sampleQuery);
     setIsAssistantOpen(true);
   };
 
@@ -191,7 +193,12 @@ export const App: React.FC = () => {
       {/* 6. Conversational AI Assistant Drawer */}
       <AssistantDrawer
         isOpen={isAssistantOpen}
-        onClose={() => setIsAssistantOpen(false)}
+        initialQuery={assistantInitialQuery}
+        onClearInitialQuery={() => setAssistantInitialQuery(undefined)}
+        onClose={() => {
+          setIsAssistantOpen(false);
+          setAssistantInitialQuery(undefined);
+        }}
         onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
       />
     </div>

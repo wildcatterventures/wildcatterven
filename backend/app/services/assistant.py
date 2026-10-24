@@ -19,17 +19,39 @@ logger = logging.getLogger("campus_uncut.assistant")
 def get_llm_provider() -> BaseLLMProvider:
     """Instantiate configured LLM provider, defaulting to MockLLMProvider if key is missing or invalid."""
     settings = get_settings()
-    if settings.LLM_PROVIDER.lower() == "groq" and settings.api_key:
+    configured_provider = (settings.LLM_PROVIDER or "mock").strip().lower()
+    has_key = bool(settings.api_key)
+
+    if configured_provider == "groq" and has_key:
         clean_key = settings.api_key.strip()
         if clean_key and clean_key.lower() not in ("your_groq_api_key_here", "none", "null"):
             try:
-                return GroqLLMProvider(
+                provider = GroqLLMProvider(
                     api_key=clean_key,
                     model=settings.LLM_MODEL,
                     timeout=settings.LLM_TIMEOUT,
                 )
+                logger.info(
+                    "[DIAGNOSTIC] Initialized GroqLLMProvider successfully (model: '%s', timeout: %.1fs, has_api_key=True)",
+                    settings.LLM_MODEL,
+                    settings.LLM_TIMEOUT,
+                )
+                return provider
             except Exception as e:
-                logger.warning("Could not initialize GroqLLMProvider: %s. Using MockLLMProvider.", e)
+                logger.warning(
+                    "[DIAGNOSTIC] Could not initialize GroqLLMProvider: %s. Using MockLLMProvider.",
+                    e,
+                )
+        else:
+            logger.info(
+                "[DIAGNOSTIC] Groq provider requested but API key is placeholder. Using MockLLMProvider."
+            )
+    else:
+        logger.info(
+            "[DIAGNOSTIC] Provider configured as '%s' (has_api_key=%s). Using MockLLMProvider.",
+            configured_provider,
+            has_key,
+        )
     return MockLLMProvider()
 
 
@@ -43,6 +65,12 @@ async def process_assistant_message(
     """
     provider = get_llm_provider()
     provider_name = "groq" if isinstance(provider, GroqLLMProvider) else "mock"
+
+    logger.info(
+        "[DIAGNOSTIC] Incoming assistant message: '%.60s...' | Active provider: '%s'",
+        req.message,
+        provider_name,
+    )
 
     # Assemble conversation messages
     messages: List[Dict[str, Any]] = []
@@ -58,9 +86,14 @@ async def process_assistant_message(
     # Step 1: Initial model completion with approved tools
     try:
         reply_text, tool_calls = await provider.generate_response(messages, APPROVED_TOOLS_SPEC)
+        logger.info(
+            "[DIAGNOSTIC] Step 1 completion succeeded with provider '%s'. Proposed tool calls: %d",
+            provider_name,
+            len(tool_calls),
+        )
     except Exception as exc:
         logger.warning(
-            "Primary LLM provider '%s' failed (%s). Activating deterministic MockProvider fallback.",
+            "[DIAGNOSTIC] Primary LLM provider '%s' failed (%s). Activating deterministic MockProvider fallback.",
             provider_name,
             exc,
         )
@@ -94,12 +127,30 @@ async def process_assistant_message(
 
             # Safely execute through validated backend domain services
             tool_res = await execute_tool(conn, tname, targs)
+            has_error = bool(isinstance(tool_res, dict) and tool_res.get("error"))
+            logger.info(
+                "[DIAGNOSTIC] Executed tool '%s' (status: %s)",
+                tname,
+                "error" if has_error else "success",
+            )
+
             tool_call_records.append(
                 ToolCallRecord(tool_name=tname, arguments=targs, result=tool_res)
             )
 
-            # Store the main tool result as structured card payload for UI
-            if not structured_payload:
+            # Store the most informative tool result as structured card payload for UI
+            is_empty_res = (
+                isinstance(tool_res, dict)
+                and (
+                    tool_res.get("count") == 0
+                    or tool_res.get("found") is False
+                    or bool(tool_res.get("error"))
+                )
+            )
+            if not structured_payload or (
+                structured_payload.get("data", {}).get("count") == 0
+                and not is_empty_res
+            ):
                 structured_payload = {"type": tname, "data": tool_res}
 
             # Append tool result with tool_call_id according to standard format
@@ -112,18 +163,36 @@ async def process_assistant_message(
 
         # Generate follow-up conversational synthesis based on tool results
         try:
-            follow_up_reply, next_tool_calls = await provider.generate_response(messages, APPROVED_TOOLS_SPEC if iteration < max_tool_iterations else None)
+            follow_up_reply, next_tool_calls = await provider.generate_response(
+                messages,
+                APPROVED_TOOLS_SPEC if iteration < max_tool_iterations else None,
+            )
             if follow_up_reply:
                 reply_text = follow_up_reply
             tool_calls = next_tool_calls
+            logger.info(
+                "[DIAGNOSTIC] Step 2 follow-up completion succeeded with provider '%s'. Reply length: %d",
+                provider_name,
+                len(reply_text or ""),
+            )
         except Exception as exc:
-            logger.warning("Follow-up LLM response generation failed: %s. Using deterministic summary.", exc)
+            logger.warning(
+                "[DIAGNOSTIC] Follow-up LLM response generation failed on '%s': %s. Using deterministic summary.",
+                provider_name,
+                exc,
+            )
             # If follow up call fails, synthesize response using MockProvider
             fallback_mock = MockLLMProvider()
             synth_reply, _ = await fallback_mock.generate_response(messages, [])
             if synth_reply:
                 reply_text = synth_reply
             tool_calls = []
+
+    logger.info(
+        "[DIAGNOSTIC] Assistant message finished (provider_used: '%s', total_tools: %d)",
+        provider_name,
+        len(tool_call_records),
+    )
 
     return AssistantMessageResponse(
         reply=reply_text or "Platform query completed successfully.",

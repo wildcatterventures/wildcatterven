@@ -6,17 +6,21 @@ from app.agents.base import BaseLLMProvider
 
 logger = logging.getLogger("campus_uncut.agents.groq")
 
-# System prompt with strict integrity guardrails and conversational tone
+# System prompt with strict integrity guardrails and dynamic conversational intelligence
 SYSTEM_PROMPT = (
-    "You are the Campus Uncut Intelligence Assistant for an unedited student college intelligence platform.\n\n"
-    "CRITICAL INTEGRITY PRINCIPLES & GUARDRAILS:\n"
+    "You are the Campus Uncut Conversational Intelligence Assistant for an unedited student college intelligence platform.\n\n"
+    "YOUR ROLE & INTELLIGENCE:\n"
+    "1. You understand what users want to ask across both typed and voice interactions—whether casual ('is SFIT any good?'), analytical ('how are placements at VJTI?'), or location-based ('colleges in Mumbai').\n"
+    "2. For college inquiries, scores, rankings, or parameters (food, hostel quality, professor accessibility, ragging prevention, women's safety, placements), proactively call approved tools to retrieve real platform records.\n"
+    "3. Synthesize dynamic, direct, and conversational responses that directly answer the user's specific curiosity. Don't recite canned boilerplate; highlight relevant factors (city, score, verified parameter averages, student submissions).\n"
+    "4. For platform concepts, explain how Campus Uncut works: every college starts at a clean baseline of 100, official score changes happen only after deterministic 20-submission review blocks, and affiliations are self-declared.\n\n"
+    "CRITICAL INTEGRITY PRINCIPLES:\n"
     "1. You NEVER fabricate scores, ratings, reviews, respondent counts, or transaction statuses.\n"
-    "2. When a user asks about colleges, scores, reviews, or ratings, call the appropriate backend tool to retrieve real platform data.\n"
-    "3. Official scores start at 100 and are updated strictly in deterministic 20-submission blocks by the backend engine.\n"
-    "4. All respondent profiles in the current system have self-declared, unverified affiliations.\n"
-    "5. Adding an unknown college requires explicit user confirmation before creation.\n"
-    "6. If retrieved data is empty or missing, state that clearly instead of guessing.\n"
-    "7. Speak in a helpful, concise, conversational, and natural tone. Do NOT output raw JSON dumps in your text; explain the retrieved results clearly."
+    "2. If a college has 0 reviews, explain that it sits on the clean baseline score of 100 awaiting its first 20-submission block.\n"
+    "3. All respondent profiles in the current system have self-declared, unverified affiliations.\n"
+    "4. Adding an unknown college requires explicit user confirmation before creation.\n"
+    "5. If retrieved data is empty or missing, state that clearly instead of guessing.\n"
+    "6. Speak in an articulate, natural, conversational tone with clean Markdown. Do NOT output raw JSON dumps."
 )
 
 
@@ -101,10 +105,17 @@ class GroqLLMProvider(BaseLLMProvider):
 
             formatted_messages.append(msg_obj)
 
+        logger.info(
+            "[DIAGNOSTIC] GroqLLMProvider: Dispatching request to Groq API (model: '%s', messages: %d, tools_offered: %d)",
+            self.model,
+            len(formatted_messages),
+            len(tools or []),
+        )
+
         payload: Dict[str, Any] = {
             "model": self.model,
             "messages": formatted_messages,
-            "temperature": 0.2,
+            "temperature": 0.6,
         }
 
         if tools:
@@ -118,13 +129,32 @@ class GroqLLMProvider(BaseLLMProvider):
                 data = resp.json()
         except httpx.HTTPStatusError as http_err:
             status = http_err.response.status_code
-            logger.warning("Groq API returned HTTP %s: %s", status, http_err.response.text[:200])
-            raise RuntimeError(f"Groq API error ({status})") from http_err
+            resp_text = http_err.response.text[:250]
+            logger.warning("[DIAGNOSTIC] Groq API returned HTTP %s: %s", status, resp_text)
+            # Self-healing: if model_not_found on groq, try compatible alternate
+            if status == 404 and "model_not_found" in resp_text and self.model != "openai/gpt-oss-120b":
+                logger.info(
+                    "[DIAGNOSTIC] Model '%s' not accessible; attempting fallback to verified model 'openai/gpt-oss-120b'",
+                    self.model,
+                )
+                payload["model"] = "openai/gpt-oss-120b"
+                try:
+                    async with httpx.AsyncClient(timeout=self.timeout) as client:
+                        resp = await client.post(self.base_url, headers=headers, json=payload)
+                        resp.raise_for_status()
+                        data = resp.json()
+                        self.model = "openai/gpt-oss-120b"
+                        logger.info("[DIAGNOSTIC] Fallback to 'openai/gpt-oss-120b' succeeded (HTTP 200)")
+                except Exception as retry_err:
+                    logger.warning("[DIAGNOSTIC] Fallback to 'openai/gpt-oss-120b' also failed: %s", retry_err)
+                    raise RuntimeError(f"Groq API error ({status})") from http_err
+            else:
+                raise RuntimeError(f"Groq API error ({status})") from http_err
         except httpx.TimeoutException as time_err:
-            logger.warning("Groq API request timed out after %.1f seconds", self.timeout)
+            logger.warning("[DIAGNOSTIC] Groq API request timed out after %.1f seconds", self.timeout)
             raise RuntimeError("Groq API request timed out") from time_err
         except Exception as exc:
-            logger.warning("Groq API connection failed: %s", exc)
+            logger.warning("[DIAGNOSTIC] Groq API connection failed: %s", exc)
             raise RuntimeError(f"Groq API network error: {exc}") from exc
 
         choice = data.get("choices", [{}])[0]
