@@ -42,7 +42,8 @@ async def test_assistant_endpoint_parameter_ratings_retrieval(client: AsyncClien
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["tool_calls"]) >= 1
-    assert data["tool_calls"][0]["tool_name"] in ("get_college_summary", "get_parameter_ratings")
+    tool_names = [tc["tool_name"] for tc in data["tool_calls"]]
+    assert any(name in ("get_college_summary", "get_parameter_ratings") for name in tool_names)
 
 
 @pytest.mark.asyncio

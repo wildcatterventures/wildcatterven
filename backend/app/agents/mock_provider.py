@@ -36,7 +36,7 @@ class MockLLMProvider(BaseLLMProvider):
                             "You can try searching by city or add an unlisted college using the 'Add Unlisted College' button.",
                             [],
                         )
-                    col_names = ", ".join(f"**{c.get('name')}** ({c.get('city')})" for c in cols[:3])
+                    col_names = ", ".join(f"{c.get('name')} ({c.get('city')})" for c in cols[:3])
                     return (
                         f"I found {len(cols)} institutional record{'s' if len(cols) != 1 else ''} in our directory, including {col_names}. "
                         "Explore the full details and verified scores in the cards below.",
@@ -53,12 +53,12 @@ class MockLLMProvider(BaseLLMProvider):
                     total = col.get("total_submitted_sessions", 0)
 
                     status_msg = (
-                        f"It currently has **{total} verified student/alumni review{'s' if total != 1 else ''}**."
+                        f"It currently has {total} verified student/alumni review{'s' if total != 1 else ''}."
                         if total > 0
                         else "It is currently awaiting its first 20 qualifying reviews to adjust from the clean base of 100."
                     )
                     return (
-                        f"**{name}** ({city}, {state}) currently has an official platform score of **{score}**. {status_msg}",
+                        f"{name} ({city}, {state}) currently has an official platform score of {score}. {status_msg}",
                         [],
                     )
 
@@ -67,7 +67,7 @@ class MockLLMProvider(BaseLLMProvider):
                     col_name = data.get("college_name", "the campus")
                     score = data.get("current_score", 100)
                     return (
-                        f"Here is the parameter-level breakdown for **{col_name}** (Base Score: {score}). "
+                        f"Here is the parameter-level breakdown for {col_name} (Base Score: {score}). "
                         "Ratings reflect authenticated student experiences across campus living, safety, academics, and governance.",
                         [],
                     )
@@ -79,7 +79,7 @@ class MockLLMProvider(BaseLLMProvider):
                     city = details.get("city", "")
                     state = details.get("state", "")
                     return (
-                        f"To protect registry integrity, please confirm adding **{name}** located in **{city}, {state}**. "
+                        f"To protect registry integrity, please confirm adding {name} located in {city}, {state}. "
                         "Once confirmed, it will be added with a baseline score of 100 awaiting student ratings.",
                         [],
                     )
@@ -89,7 +89,7 @@ class MockLLMProvider(BaseLLMProvider):
                     col = data.get("college", {})
                     name = col.get("name", "The college")
                     return (
-                        f"**{name}** has been successfully registered on Campus Uncut! "
+                        f"{name} has been successfully registered on Campus Uncut! "
                         "It has been initialized with a clean baseline score of 100 and is now open for student ratings.",
                         [],
                     )
@@ -104,12 +104,12 @@ class MockLLMProvider(BaseLLMProvider):
                 # Rating answer saved
                 if data.get("status") == "saved":
                     pname = data.get("parameter_name", "parameter")
-                    return f"Your evaluation for **{pname}** has been saved.", []
+                    return f"Your evaluation for {pname} has been saved.", []
 
                 # Rating session submitted
                 if "new_score" in data:
                     score = data.get("new_score")
-                    return f"Thank you! Your rating session has been submitted. The college score is now **{score}**.", []
+                    return f"Thank you! Your rating session has been submitted. The college score is now {score}.", []
 
             return "Retrieved official platform records. Check the summary card below for details.", []
 

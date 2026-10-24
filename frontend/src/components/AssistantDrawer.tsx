@@ -121,6 +121,92 @@ function cleanAssistantReply(
   return { displayText: text, structuredPayload: payload };
 }
 
+/**
+ * Renders message text cleanly by stripping raw markdown asterisks (*)
+ * and formatting **bold** terms into styled strong elements without visible stars.
+ */
+function renderMessageContent(content: string, isUser: boolean) {
+  if (!content) return null;
+
+  const lines = content.split("\n");
+
+  return (
+    <div className="space-y-1.5 font-sans leading-relaxed">
+      {lines.map((line, lineIdx) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) {
+          return <div key={lineIdx} className="h-1" />;
+        }
+
+        // Clean markdown headers (### Header -> styled heading without hashtags or asterisks)
+        const headerMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
+        if (headerMatch) {
+          const headerLevel = headerMatch[1].length;
+          const headerText = headerMatch[2].replace(/\*/g, "").trim();
+          return (
+            <div
+              key={lineIdx}
+              className={`font-semibold tracking-tight ${
+                headerLevel <= 2
+                  ? "text-sm sm:text-base text-charcoal font-serif mt-2 mb-0.5"
+                  : "text-xs sm:text-sm text-charcoal font-sans mt-1.5 mb-0.5"
+              }`}
+            >
+              {headerText}
+            </div>
+          );
+        }
+
+        // Clean bullet indicators
+        const isBullet =
+          trimmedLine.startsWith("- ") ||
+          trimmedLine.startsWith("* ") ||
+          trimmedLine.startsWith("• ");
+        const lineContent = isBullet ? trimmedLine.slice(2).trim() : trimmedLine;
+
+        // Parse **bold text** without showing literal asterisks
+        const segments: React.ReactNode[] = [];
+        const parts = lineContent.split(/(\*\*[^*]+?\*\*)/g);
+
+        parts.forEach((part, partIdx) => {
+          if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+            const innerText = part.slice(2, -2).trim();
+            segments.push(
+              <strong
+                key={partIdx}
+                className={isUser ? "font-semibold text-paper" : "font-semibold text-charcoal"}
+              >
+                {innerText}
+              </strong>
+            );
+          } else {
+            // Strip any remaining lone or paired asterisks
+            const cleaned = part.replace(/\*/g, "");
+            if (cleaned) {
+              segments.push(<span key={partIdx}>{cleaned}</span>);
+            }
+          }
+        });
+
+        if (isBullet) {
+          return (
+            <div key={lineIdx} className="flex items-start gap-2 pl-0.5">
+              <span
+                className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
+                  isUser ? "bg-paper/70" : "bg-olive"
+                }`}
+              />
+              <div className="flex-1">{segments}</div>
+            </div>
+          );
+        }
+
+        return <div key={lineIdx}>{segments}</div>;
+      })}
+    </div>
+  );
+}
+
 export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   isOpen,
   initialQuery,
@@ -373,8 +459,8 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
                     : "bg-paper border border-warm-grey text-charcoal rounded-bl-none shadow-subtle"
                 }`}
               >
-                {/* Clean, readable message text without JSON dumps */}
-                <div className="whitespace-pre-line font-sans">{m.content}</div>
+                {/* Clean, readable message text formatted without raw asterisks */}
+                {renderMessageContent(m.content, isUser)}
 
                 {/* Structured Visual Cards */}
                 {m.structuredPayload && (
