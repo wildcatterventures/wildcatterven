@@ -18,6 +18,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
 }) => {
   const [query, setQuery] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const stopListeningRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   }, []);
 
   const handleVoiceToggle = () => {
+    setVoiceError(null);
     if (isListening) {
       if (stopListeningRef.current) {
         stopListeningRef.current();
@@ -35,21 +37,29 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
       setIsListening(false);
     } else {
       if (!isSpeechRecognitionSupported()) {
-        alert("Speech recognition is not supported in this browser. Please type your search.");
+        setVoiceError("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
         return;
       }
       setIsListening(true);
-      const stop = startSpeechRecognition(
-        (transcript, isFinal) => {
+      const stop = startSpeechRecognition({
+        onStart: () => {
+          setIsListening(true);
+          setVoiceError(null);
+        },
+        onTranscript: (transcript, isFinal) => {
           setQuery(transcript);
           if (isFinal) {
             setIsListening(false);
-            onSearch(transcript);
           }
         },
-        () => setIsListening(false),
-        () => setIsListening(false)
-      );
+        onError: (errorMsg) => {
+          setIsListening(false);
+          setVoiceError(errorMsg);
+        },
+        onEnd: () => {
+          setIsListening(false);
+        },
+      });
       stopListeningRef.current = stop;
     }
   };
@@ -127,6 +137,20 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
               </button>
             </form>
 
+            {/* Voice Feedback / Error Banner */}
+            {voiceError && (
+              <div className="mb-4 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between max-w-xl">
+                <span>{voiceError}</span>
+                <button
+                  type="button"
+                  onClick={() => setVoiceError(null)}
+                  className="text-rose-600 hover:text-rose-900 font-bold ml-2 text-sm"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             {/* Suggested Prompt Chips */}
             <div className="flex items-center gap-1.5 flex-wrap text-xs text-charcoal-muted max-w-xl mb-6">
               <span className="font-mono text-[10px] uppercase text-charcoal/70 mr-1">
@@ -134,9 +158,9 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
               </span>
               {[
                 "Search SFIT",
-                "St. Jude Demo Score",
+                "Score of COEP",
+                "Placements at VJTI",
                 "Colleges in Mumbai",
-                "Apex Technical Academy",
               ].map((sample) => (
                 <button
                   key={sample}

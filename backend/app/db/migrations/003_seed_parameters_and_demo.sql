@@ -97,8 +97,13 @@ ON CONFLICT (parameter_id) DO UPDATE SET
 INSERT INTO colleges (id, name, short_code, city, state, is_demo)
 VALUES
     ('c0000000-0000-0000-0000-000000000001', 'St. Francis Institute of Technology', 'SFIT', 'Mumbai', 'Maharashtra', FALSE),
-    ('c0000000-0000-0000-0000-000000000002', 'St. Jude Institute of Technology (Demo)', 'JUDE-DEMO', 'Bhopal', 'Madhya Pradesh', TRUE),
-    ('c0000000-0000-0000-0000-000000000003', 'Apex Technical Academy (Demo)', 'APEX-DEMO', 'Coimbatore', 'Tamil Nadu', TRUE)
+    ('c0000000-0000-0000-0000-000000000004', 'Veermata Jijabai Technological Institute', 'VJTI', 'Mumbai', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000005', 'College of Engineering Pune', 'COEP', 'Pune', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000006', 'Indian Institute of Technology Bombay', 'IITB', 'Mumbai', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000007', 'Sardar Patel Institute of Technology', 'SPIT', 'Mumbai', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000008', 'Vidyalankar Institute of Technology', 'VIT-MUM', 'Mumbai', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000009', 'Pune Institute of Computer Technology', 'PICT', 'Pune', 'Maharashtra', FALSE),
+    ('c0000000-0000-0000-0000-000000000011', 'Walchand College of Engineering', 'WCE', 'Sangli', 'Maharashtra', FALSE)
 ON CONFLICT (short_code) DO UPDATE SET
     name = EXCLUDED.name,
     city = EXCLUDED.city,

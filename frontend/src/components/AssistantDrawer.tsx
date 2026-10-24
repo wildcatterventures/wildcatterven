@@ -136,6 +136,8 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voicePlaybackEnabled, setVoicePlaybackEnabled] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const stopListeningRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -154,9 +156,42 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
     };
   }, []);
 
+  const handlePlayMessageAudio = (msg: MessageItem) => {
+    if (speakingMessageId === msg.id) {
+      stopSpeaking();
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    stopSpeaking();
+    setSpeakingMessageId(msg.id);
+
+    // Build spoken text (clean user-facing response + concise spoken summary for cards)
+    let speechContent = msg.content;
+    if (msg.structuredPayload) {
+      if (msg.structuredPayload.type === "get_college_summary" && msg.structuredPayload.data?.college) {
+        const col = msg.structuredPayload.data.college;
+        speechContent += ` Institutional score is ${col.current_score} out of 100 with ${col.total_submitted_sessions} ratings.`;
+      } else if (msg.structuredPayload.type === "search_colleges" && msg.structuredPayload.data?.colleges) {
+        const list = msg.structuredPayload.data.colleges;
+        speechContent += ` Found ${list.length} colleges in the directory.`;
+      }
+    }
+
+    speakText(speechContent, {
+      onStart: () => setSpeakingMessageId(msg.id),
+      onEnd: () => setSpeakingMessageId(null),
+      onError: () => setSpeakingMessageId(null),
+    });
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
     if (!text || isLoading) return;
+
+    // Interrupt any ongoing speech when user sends a new message
+    stopSpeaking();
+    setSpeakingMessageId(null);
 
     const userMsgId = `user_${Date.now()}`;
     const newMessages = [
@@ -196,7 +231,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (voicePlaybackEnabled) {
-        speakText(displayText);
+        handlePlayMessageAudio(assistantMsg);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -214,6 +249,10 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   };
 
   const toggleListening = () => {
+    stopSpeaking();
+    setSpeakingMessageId(null);
+    setVoiceError(null);
+
     if (isListening) {
       if (stopListeningRef.current) {
         stopListeningRef.current();
@@ -222,25 +261,29 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       setIsListening(false);
     } else {
       if (!isSpeechRecognitionSupported()) {
-        alert("Speech recognition is not supported in this browser. Please type your query.");
+        setVoiceError("Speech recognition is not supported in this browser. Please type your query.");
         return;
       }
       setIsListening(true);
-      const stopFn = startSpeechRecognition(
-        (transcript, isFinal) => {
+      const stopFn = startSpeechRecognition({
+        onStart: () => {
+          setIsListening(true);
+          setVoiceError(null);
+        },
+        onTranscript: (transcript, isFinal) => {
           setInput(transcript);
           if (isFinal) {
             setIsListening(false);
-            handleSendMessage(transcript);
           }
         },
-        () => {
+        onError: (errText) => {
+          setIsListening(false);
+          setVoiceError(errText);
+        },
+        onEnd: () => {
           setIsListening(false);
         },
-        () => {
-          setIsListening(false);
-        }
-      );
+      });
       stopListeningRef.current = stopFn;
     }
   };
@@ -494,11 +537,28 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
                 )}
               </div>
 
-              {m.providerUsed && (
-                <span className="text-[10px] font-mono text-charcoal-muted/70 mt-1 px-1">
-                  Engine: {m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
-                </span>
-              )}
+              <div className="flex items-center gap-2 mt-1 px-1">
+                {!isUser && isSpeechSynthesisSupported() && (
+                  <button
+                    type="button"
+                    onClick={() => handlePlayMessageAudio(m)}
+                    title={speakingMessageId === m.id ? "Stop voice playback" : "Read message aloud"}
+                    className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
+                      speakingMessageId === m.id
+                        ? "bg-olive text-paper animate-pulse font-semibold"
+                        : "text-charcoal-muted hover:text-charcoal bg-warm-grey-light hover:bg-warm-grey"
+                    }`}
+                  >
+                    <Volume2 className="w-3 h-3" />
+                    <span>{speakingMessageId === m.id ? "Stop Voice" : "Listen"}</span>
+                  </button>
+                )}
+                {m.providerUsed && (
+                  <span className="text-[10px] font-mono text-charcoal-muted/70">
+                    Engine: {m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}
@@ -520,10 +580,16 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           Search SFIT
         </button>
         <button
-          onClick={() => handleSendMessage("What is the score of St. Jude Demo?")}
+          onClick={() => handleSendMessage("What is the score of COEP?")}
           className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
         >
-          St. Jude Score
+          Score of COEP
+        </button>
+        <button
+          onClick={() => handleSendMessage("How are placements at VJTI?")}
+          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
+        >
+          Placements VJTI
         </button>
         <button
           onClick={() => handleSendMessage("List rating parameters")}
@@ -532,6 +598,20 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           Question Bank
         </button>
       </div>
+
+      {/* Voice Error Notification */}
+      {voiceError && (
+        <div className="mx-3 mt-2 p-2 rounded bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-center justify-between">
+          <span>{voiceError}</span>
+          <button
+            type="button"
+            onClick={() => setVoiceError(null)}
+            className="text-rose-600 hover:text-rose-900 font-bold ml-2 text-sm"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="p-3 border-t border-warm-grey bg-card">
