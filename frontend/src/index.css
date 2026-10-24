@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #F5F2EB;
+    color: #252724;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Newsreader', Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Editorial card with subtle paper border and warm hover state */
+  .editorial-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E1D8;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(37, 39, 36, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .editorial-card:hover {
+    border-color: #CAC5B8;
+    box-shadow: 0 4px 12px -2px rgba(37, 39, 36, 0.08);
+  }
+
+  /* Paper pill badge */
+  .badge-editorial {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    border: 1px solid #E5E1D8;
+    background-color: #FAF8F5;
+    color: #252724;
+  }
+
+  /* Demo Simulated Badge */
+  .badge-demo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-radius: 9999px;
+    background-color: #F3F1EC;
+    color: #5A5D56;
+    border: 1px dashed #CAC5B8;
+  }
+
+  /* Primary Editorial Button */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #252724;
+    color: #F5F2EB;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.55rem 1.15rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: #3C3E3A;
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Secondary Editorial Button */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: #252724;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.55rem 1.15rem;
+    border: 1px solid #CAC5B8;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #FFFFFF;
+    border-color: #252724;
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Terracotta Action Button */
+  .btn-terracotta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #C85A32;
+    color: #FFFFFF;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.55rem 1.15rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-terracotta:hover:not(:disabled) {
+    background-color: #A94723;
+  }
+
+  .btn-terracotta:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* Editorial image frame with warm border */
+  .editorial-image-frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #E5E1D8;
+    border-radius: 6px;
+    box-shadow: 0 4px 20px -4px rgba(37, 39, 36, 0.12);
+  }
+
+  /* Editorial ruled line */
+  .editorial-rule {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, #E5E1D8 0%, #CAC5B8 50%, #E5E1D8 100%);
+  }
+
+  /* Score progress horizontal bar */
+  .score-bar-track {
+    background-color: #E5E1D8;
+    height: 6px;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
