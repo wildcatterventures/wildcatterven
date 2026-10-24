@@ -5,8 +5,9 @@ import { Footer } from "./components/Footer";
 import { UnknownCollegeModal } from "./components/UnknownCollegeModal";
 import { AssistantDrawer } from "./components/AssistantDrawer";
 import { ConversationalHero } from "./features/home/ConversationalHero";
-import { QuickActions } from "./features/home/QuickActions";
+import { HowItWorks } from "./features/home/HowItWorks";
 import { FeaturedColleges } from "./features/home/FeaturedColleges";
+
 import { CollegeList } from "./features/colleges/CollegeList";
 import { CollegeDetail } from "./features/colleges/CollegeDetail";
 import { RespondentSetup } from "./features/rating/RespondentSetup";
@@ -110,18 +111,24 @@ export const App: React.FC = () => {
             <ConversationalHero
               onSearch={handleHeroSearch}
               onOpenAssistantWithQuery={handleOpenAssistantWithQuery}
+              onExplore={() => handleNavigate("colleges")}
+              onRate={() => handleNavigate("rate")}
             />
-            <QuickActions
-              onNavigate={handleNavigate}
-              onOpenUnknownModal={() => setIsUnknownModalOpen(true)}
-              onToggleAssistant={() => setIsAssistantOpen(true)}
+            <HowItWorks
+              onExplore={() => handleNavigate("colleges")}
+              onRate={() => handleNavigate("rate")}
             />
             <FeaturedColleges
               colleges={previewColleges}
               loading={loadingPreview}
               onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
               onExploreAll={() => handleNavigate("colleges")}
+              onRateCollege={(id) => {
+                setSelectedCollegeId(id);
+                setCurrentView("rate");
+              }}
             />
+
           </>
         )}
 

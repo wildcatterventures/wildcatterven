@@ -88,34 +88,46 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
         )}
 
         {/* Calculation Preview Box */}
-        <div className="p-4 rounded border border-warm-grey bg-warm-grey-light mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div>
+        <div className="p-4 rounded border border-warm-grey bg-warm-grey-light mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
             <div className="font-serif text-2xl font-bold text-charcoal">
-              {mean !== null ? mean.toFixed(3) : "None (All No view)"}
+              {mean !== null ? mean.toFixed(2) : "—"}
             </div>
-            <div className="text-[11px] font-mono text-charcoal-muted uppercase mt-0.5">
-              Unrounded Overall Mean
+            <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
+              Unrounded Mean
             </div>
           </div>
 
-          <div>
-            <div className="font-serif text-2xl font-bold capitalize text-charcoal">
+          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className={`font-serif text-2xl font-bold capitalize ${
+              category === "high" ? "text-emerald-800" : category === "low" ? "text-rose-800" : "text-charcoal"
+            }`}>
               {category || "N/A"}
             </div>
-            <div className="text-[11px] font-mono text-charcoal-muted uppercase mt-0.5">
-              Score Category
+            <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
+              Threshold Tier
             </div>
           </div>
 
-          <div>
+          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
             <div className="font-serif text-2xl font-bold text-charcoal">
-              {numericScores.length} / 25
+              {numericScores.length}
             </div>
-            <div className="text-[11px] font-mono text-charcoal-muted uppercase mt-0.5">
-              Numeric Ratings ({noViewCount} No view)
+            <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
+              Numeric Ratings (1-10)
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className="font-serif text-2xl font-bold text-olive">
+              {noViewCount}
+            </div>
+            <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
+              "No view" Excluded
             </div>
           </div>
         </div>
+
 
         {!isComplete && (
           <div className="mb-6 p-3.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">

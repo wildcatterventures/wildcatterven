@@ -7,6 +7,10 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
+  ArrowRight,
+  HelpCircle,
+  CheckCircle2,
+  MapPin,
 } from "lucide-react";
 import { api } from "../lib/api";
 import { getClientUUID, getActiveSessionId } from "../lib/storage";
@@ -36,6 +40,85 @@ interface MessageItem {
   providerUsed?: string;
 }
 
+/**
+ * Cleanly separates natural text from raw JSON payloads.
+ * Prevents stringified JSON dumps from ever appearing in chat bubbles.
+ */
+function cleanAssistantReply(
+  rawContent: string,
+  existingPayload?: any
+): { displayText: string; structuredPayload: any | null } {
+  let text = rawContent || "";
+  let payload = existingPayload || null;
+
+  // Pattern 1: "Based on retrieved platform records:\n\n{...}"
+  const platformRecordsMatch = text.match(
+    /Based on retrieved platform records:\s*([\s\S]*)/i
+  );
+  if (platformRecordsMatch) {
+    const rawJson = platformRecordsMatch[1].trim();
+    try {
+      const parsed = JSON.parse(rawJson);
+      // Auto-wrap into structured payload if not already provided
+      if (!payload) {
+        if (parsed.colleges && Array.isArray(parsed.colleges)) {
+          payload = { type: "search_colleges", data: parsed };
+          text = `I found ${parsed.colleges.length} institutional record${
+            parsed.colleges.length === 1 ? "" : "s"
+          } in the directory:`;
+        } else if (parsed.college) {
+          payload = { type: "get_college_summary", data: parsed };
+          text = `Here is the verified score overview from our PostgreSQL database:`;
+        } else if (parsed.parameters && Array.isArray(parsed.parameters)) {
+          payload = { type: "get_parameter_ratings", data: parsed };
+          text = `Here is the parameter-level rating breakdown across core criteria:`;
+        } else if (parsed.status === "confirmation_required") {
+          payload = { type: "create_unknown_college", data: parsed };
+          text = `Please confirm before registering this unlisted campus:`;
+        } else {
+          text = `Here are the platform details retrieved:`;
+        }
+      } else {
+        text = `Here is what I found in our institutional registry:`;
+      }
+    } catch {
+      // Not valid JSON, leave text as is
+      text = text.replace(/Based on retrieved platform records:\s*/i, "").trim();
+    }
+  }
+
+  // Pattern 2: The entire text is a JSON string
+  const trimmed = text.trim();
+  if (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+  ) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (!payload) {
+        if (parsed.colleges) {
+          payload = { type: "search_colleges", data: parsed };
+          text = `Found ${parsed.colleges.length} matching college${
+            parsed.colleges.length === 1 ? "" : "s"
+          }:`;
+        } else if (parsed.college) {
+          payload = { type: "get_college_summary", data: parsed };
+          text = `Institutional profile retrieved:`;
+        } else if (parsed.parameters) {
+          payload = { type: "get_parameter_ratings", data: parsed };
+          text = `Parameter scores retrieved:`;
+        }
+      } else {
+        text = "Here is the institutional information:";
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { displayText: text, structuredPayload: payload };
+}
+
 export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   isOpen,
   onClose,
@@ -46,7 +129,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       id: "init",
       role: "assistant",
       content:
-        "Welcome! I am the Campus Uncut AI Assistant. Ask me to search for colleges, summarize official scores, explore ratings across academics, food, or safety, or guide you through rating your campus.",
+        "Welcome to the Campus Uncut Intelligence Assistant. Ask me to look up official scores, check parameter ratings (food, hostels, academics, safety), or explore verified student experiences.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -96,19 +179,24 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
         history: historyPayload,
       });
 
+      const { displayText, structuredPayload } = cleanAssistantReply(
+        res.reply,
+        res.structured_payload
+      );
+
       const assistantMsg: MessageItem = {
         id: `assistant_${Date.now()}`,
         role: "assistant",
-        content: res.reply,
+        content: displayText,
         toolCalls: res.tool_calls,
-        structuredPayload: res.structured_payload,
+        structuredPayload: structuredPayload,
         providerUsed: res.provider_used,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (voicePlaybackEnabled) {
-        speakText(res.reply);
+        speakText(displayText);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -117,7 +205,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           id: `error_${Date.now()}`,
           role: "assistant",
           content:
-            "I encountered a temporary connection issue. You can still browse and search colleges directly using the Explore view.",
+            "I encountered a temporary connection issue. You can still search and view colleges directly using the Explore Colleges directory.",
         },
       ]);
     } finally {
@@ -134,7 +222,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       setIsListening(false);
     } else {
       if (!isSpeechRecognitionSupported()) {
-        alert("Speech recognition is not supported in this browser. Please use text input.");
+        alert("Speech recognition is not supported in this browser. Please type your query.");
         return;
       }
       setIsListening(true);
@@ -160,33 +248,43 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-paper border-l border-warm-grey shadow-dropdown flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-warm-grey flex items-center justify-between bg-card">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-olive" />
-          <h3 className="font-serif text-lg font-bold text-charcoal">Campus AI Assistant</h3>
-          <span className="text-[10px] font-mono uppercase bg-warm-grey-light px-2 py-0.5 rounded text-charcoal-muted">
-            Guardrailed
-          </span>
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-card border-l border-warm-grey z-50 shadow-2xl flex flex-col font-sans animate-in slide-in-from-right duration-200">
+      {/* Drawer Header */}
+      <div className="p-4 border-b border-warm-grey flex items-center justify-between bg-paper">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded bg-olive-light flex items-center justify-center text-olive border border-olive/20">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="font-serif font-bold text-base text-charcoal">
+              Campus Intelligence
+            </h2>
+            <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>FastAPI Database Agent</span>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-1">
           {isSpeechSynthesisSupported() && (
             <button
               onClick={() => {
-                const next = !voicePlaybackEnabled;
-                setVoicePlaybackEnabled(next);
-                if (!next) stopSpeaking();
+                if (voicePlaybackEnabled) stopSpeaking();
+                setVoicePlaybackEnabled(!voicePlaybackEnabled);
               }}
-              title={voicePlaybackEnabled ? "Mute spoken replies" : "Enable spoken replies"}
+              title={voicePlaybackEnabled ? "Mute voice playback" : "Enable voice playback"}
               className={`p-1.5 rounded transition-colors ${
                 voicePlaybackEnabled
                   ? "text-olive bg-olive-light"
-                  : "text-charcoal-muted hover:text-charcoal"
+                  : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
               }`}
             >
-              {voicePlaybackEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {voicePlaybackEnabled ? (
+                <Volume2 className="w-4 h-4" />
+              ) : (
+                <VolumeX className="w-4 h-4" />
+              )}
             </button>
           )}
 
@@ -204,130 +302,211 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
 
       {/* Messages Scroll Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex flex-col ${
-              m.role === "user" ? "items-end" : "items-start"
-            }`}
-          >
+        {messages.map((m) => {
+          const isUser = m.role === "user";
+          return (
             <div
-              className={`max-w-[90%] text-xs sm:text-sm p-3.5 rounded-lg leading-relaxed ${
-                m.role === "user"
-                  ? "bg-charcoal text-paper rounded-br-none"
-                  : "bg-card border border-warm-grey text-charcoal rounded-bl-none shadow-subtle"
-              }`}
+              key={m.id}
+              className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
             >
-              <div className="whitespace-pre-line">{m.content}</div>
+              <div
+                className={`max-w-[92%] text-xs sm:text-sm p-4 rounded-lg leading-relaxed ${
+                  isUser
+                    ? "bg-charcoal text-paper rounded-br-none shadow-sm"
+                    : "bg-paper border border-warm-grey text-charcoal rounded-bl-none shadow-subtle"
+                }`}
+              >
+                {/* Clean, readable message text without JSON dumps */}
+                <div className="whitespace-pre-line font-sans">{m.content}</div>
 
-              {/* Render Structured UI Card if tool produced output */}
-              {m.structuredPayload && (
-                <div className="mt-3 pt-3 border-t border-warm-grey">
-                  {/* College Search Results Card */}
-                  {m.structuredPayload.type === "search_colleges" &&
-                    m.structuredPayload.data?.colleges && (
-                      <div className="space-y-2 mt-1">
-                        <div className="text-[11px] font-mono text-charcoal-muted uppercase">
-                          Found {m.structuredPayload.data.colleges.length} Match(es)
+                {/* Structured Visual Cards */}
+                {m.structuredPayload && (
+                  <div className="mt-3 pt-3 border-t border-warm-grey/80">
+                    {/* 1. College Search Results */}
+                    {m.structuredPayload.type === "search_colleges" &&
+                      m.structuredPayload.data?.colleges && (
+                        <div className="space-y-2 mt-1">
+                          <div className="text-[10px] font-mono text-charcoal-muted uppercase tracking-wider flex items-center justify-between">
+                            <span>Directory Results</span>
+                            <span>{m.structuredPayload.data.colleges.length} found</span>
+                          </div>
+                          {m.structuredPayload.data.colleges.slice(0, 4).map((col: any) => (
+                            <div
+                              key={col.college_id}
+                              onClick={() => {
+                                onSelectCollege(col.college_id);
+                                onClose();
+                              }}
+                              className="p-3 rounded border border-warm-grey bg-card hover:border-olive cursor-pointer transition-all hover:shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-semibold text-xs text-charcoal flex items-center gap-1.5">
+                                    <span>{col.name}</span>
+                                    {col.is_demo ? (
+                                      <DemoBadge />
+                                    ) : (
+                                      <span className="text-[10px] font-mono text-olive font-medium px-1.5 py-0.2 rounded bg-olive-light">
+                                        Official
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-charcoal-muted mt-0.5 flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-olive" />
+                                    <span>
+                                      {col.city}, {col.state}
+                                    </span>
+                                    <span>•</span>
+                                    <span>{col.total_submitted_sessions} ratings</span>
+                                  </div>
+                                </div>
+                                <ScoreBadge score={col.current_score} size="sm" />
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        {m.structuredPayload.data.colleges.slice(0, 3).map((col: any) => (
-                          <div
-                            key={col.college_id}
-                            onClick={() => {
-                              onSelectCollege(col.college_id);
-                              onClose();
-                            }}
-                            className="p-2.5 rounded border border-warm-grey bg-paper hover:border-olive cursor-pointer transition-colors flex items-center justify-between"
-                          >
+                      )}
+
+                    {/* 2. College Summary Card */}
+                    {m.structuredPayload.type === "get_college_summary" &&
+                      m.structuredPayload.data?.college && (
+                        <div className="p-3.5 rounded border border-warm-grey bg-card mt-1 shadow-sm">
+                          <div className="flex items-start justify-between gap-2">
                             <div>
-                              <div className="font-semibold text-xs text-charcoal flex items-center gap-1.5">
-                                <span>{col.name}</span>
-                                {col.is_demo && <DemoBadge />}
+                              <div className="font-serif font-bold text-sm sm:text-base text-charcoal">
+                                {m.structuredPayload.data.college.name}
                               </div>
-                              <div className="text-[11px] text-charcoal-muted">
-                                {col.city}, {col.state} • {col.total_submitted_sessions} ratings
+                              <div className="text-[11px] text-charcoal-muted mt-0.5 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-olive" />
+                                <span>
+                                  {m.structuredPayload.data.college.city},{" "}
+                                  {m.structuredPayload.data.college.state}
+                                </span>
                               </div>
                             </div>
-                            <ScoreBadge score={col.current_score} size="sm" />
+                            <ScoreBadge
+                              score={m.structuredPayload.data.college.current_score}
+                              size="md"
+                            />
                           </div>
-                        ))}
-                      </div>
-                    )}
 
-                  {/* College Summary Card */}
-                  {m.structuredPayload.type === "get_college_summary" &&
-                    m.structuredPayload.data?.college && (
-                      <div className="p-3 rounded border border-warm-grey bg-paper mt-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-serif font-bold text-sm text-charcoal">
-                              {m.structuredPayload.data.college.name}
+                          <div className="mt-3 pt-2.5 border-t border-warm-grey grid grid-cols-2 gap-2 text-center text-[11px]">
+                            <div className="p-1.5 rounded bg-warm-grey-light">
+                              <span className="font-bold text-charcoal">
+                                {m.structuredPayload.data.college.total_submitted_sessions}
+                              </span>
+                              <div className="text-[10px] text-charcoal-muted uppercase font-mono">
+                                Total Ratings
+                              </div>
                             </div>
-                            <div className="text-[11px] text-charcoal-muted mt-0.5">
-                              {m.structuredPayload.data.college.city},{" "}
-                              {m.structuredPayload.data.college.state}
+                            <div className="p-1.5 rounded bg-warm-grey-light">
+                              <span className="font-bold text-charcoal">
+                                {m.structuredPayload.data.college.is_demo ? "Simulated" : "Registry Base"}
+                              </span>
+                              <div className="text-[10px] text-charcoal-muted uppercase font-mono">
+                                Status
+                              </div>
                             </div>
                           </div>
-                          <ScoreBadge
-                            score={m.structuredPayload.data.college.current_score}
-                            size="sm"
-                          />
-                        </div>
-                        <div className="mt-2.5 pt-2 border-t border-warm-grey flex items-center justify-between text-xs">
-                          <span className="text-charcoal-muted text-[11px]">
-                            {m.structuredPayload.data.college.total_submitted_sessions} submitted ratings
-                          </span>
+
                           <button
                             onClick={() => {
                               onSelectCollege(m.structuredPayload.data.college.college_id);
                               onClose();
                             }}
-                            className="text-xs font-semibold text-olive hover:underline"
+                            className="mt-3 w-full btn-primary text-xs py-1.5 flex items-center justify-center gap-1.5"
                           >
-                            View Full Report →
+                            <span>Open College Report</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                  {/* Create College Confirmation Card */}
-                  {m.structuredPayload.type === "create_unknown_college" &&
-                    m.structuredPayload.data?.status === "confirmation_required" && (
-                      <div className="p-3 rounded border border-warm-grey bg-olive-light/50 mt-1">
-                        <div className="text-xs font-medium text-charcoal">
-                          Confirmation Required:
+                    {/* 3. Parameter Ratings Breakdown Card */}
+                    {m.structuredPayload.type === "get_parameter_ratings" &&
+                      m.structuredPayload.data?.parameters && (
+                        <div className="space-y-2 mt-1">
+                          <div className="text-[10px] font-mono text-charcoal-muted uppercase tracking-wider">
+                            Verified Parameter Highlights
+                          </div>
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            {m.structuredPayload.data.parameters
+                              .slice(0, 5)
+                              .map((param: any) => {
+                                const avg = param.average_score;
+                                return (
+                                  <div
+                                    key={param.parameter_id || param.display_order}
+                                    className="p-2 rounded bg-card border border-warm-grey text-xs flex items-center justify-between"
+                                  >
+                                    <div>
+                                      <div className="font-medium text-charcoal text-[11px]">
+                                        {param.parameter_name}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-olive uppercase">
+                                        {param.parameter_category}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      {avg !== null && avg !== undefined ? (
+                                        <span className="font-bold font-mono text-charcoal">
+                                          {Number(avg).toFixed(1)}/10
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-charcoal-muted italic">
+                                          No ratings
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
-                        <p className="text-xs text-charcoal-muted mt-1">
-                          {m.structuredPayload.data.message}
-                        </p>
-                        <button
-                          onClick={() =>
-                            handleSendMessage(
-                              `Yes, please confirm adding ${m.structuredPayload.data.details.name} in ${m.structuredPayload.data.details.city}, ${m.structuredPayload.data.details.state}`
-                            )
-                          }
-                          className="mt-2.5 btn-primary text-xs w-full py-1.5"
-                        >
-                          Confirm & Add College
-                        </button>
-                      </div>
-                    )}
-                </div>
+                      )}
+
+                    {/* 4. Unknown College Confirmation Card */}
+                    {m.structuredPayload.type === "create_unknown_college" &&
+                      m.structuredPayload.data?.status === "confirmation_required" && (
+                        <div className="p-3.5 rounded border border-terracotta/40 bg-terracotta-light text-xs mt-1">
+                          <div className="font-semibold text-charcoal flex items-center gap-1.5 mb-1">
+                            <HelpCircle className="w-4 h-4 text-terracotta" />
+                            <span>Confirm College Creation</span>
+                          </div>
+                          <p className="text-charcoal-muted leading-relaxed">
+                            {m.structuredPayload.data.message ||
+                              "Please confirm adding this new college to the database with a starting baseline score of 100."}
+                          </p>
+                          <button
+                            onClick={() =>
+                              handleSendMessage(
+                                `Yes, please confirm adding ${m.structuredPayload.data.details.name} in ${m.structuredPayload.data.details.city}, ${m.structuredPayload.data.details.state}`
+                              )
+                            }
+                            className="mt-3 btn-terracotta text-xs w-full py-2 font-medium"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Confirm & Add College</span>
+                          </button>
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+
+              {m.providerUsed && (
+                <span className="text-[10px] font-mono text-charcoal-muted/70 mt-1 px-1">
+                  Engine: {m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
+                </span>
               )}
             </div>
-
-            {m.providerUsed && (
-              <span className="text-[10px] font-mono text-charcoal-muted mt-1 px-1">
-                Via {m.providerUsed === "mock" ? "Platform Engine" : m.providerUsed}
-              </span>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         {isLoading && (
           <div className="flex items-center gap-2 text-xs text-charcoal-muted p-2">
             <span className="w-2 h-2 rounded-full bg-olive animate-ping" />
-            <span>Consulting verified platform records...</span>
+            <span>Consulting verified platform database...</span>
           </div>
         )}
       </div>
@@ -336,19 +515,19 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       <div className="px-4 py-2 border-t border-warm-grey bg-paper flex items-center gap-1.5 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
         <button
           onClick={() => handleSendMessage("Search for SFIT")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px]"
+          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
         >
           Search SFIT
         </button>
         <button
           onClick={() => handleSendMessage("What is the score of St. Jude Demo?")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px]"
+          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
         >
           St. Jude Score
         </button>
         <button
           onClick={() => handleSendMessage("List rating parameters")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px]"
+          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
         >
           Question Bank
         </button>
@@ -368,7 +547,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
-              isListening ? "Listening... speak now" : "Ask about a college or rating..."
+              isListening ? "Listening... speak now" : "Ask about scores, ratings, or campuses..."
             }
             className="flex-1 px-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
           />

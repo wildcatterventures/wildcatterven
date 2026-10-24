@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Search, PlusCircle, AlertCircle, RefreshCw, Filter } from "lucide-react";
+import { Search, PlusCircle, AlertCircle, RefreshCw } from "lucide-react";
+
 import { api } from "../../lib/api";
 import type { CollegeSummary } from "../../types/college";
 import { CollegeCard } from "./CollegeCard";
@@ -61,7 +62,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
 
         <button
           onClick={onOpenUnknownModal}
-          className="btn-primary text-xs self-start md:self-auto py-2"
+          className="btn-primary text-xs self-start md:self-auto py-2.5 px-4 font-semibold"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Add Unlisted College</span>
@@ -69,7 +70,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 rounded border border-warm-grey">
+      <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 rounded border border-warm-grey shadow-subtle">
         <div className="relative w-full sm:max-w-md">
           <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
           <input
@@ -89,13 +90,13 @@ export const CollegeList: React.FC<CollegeListProps> = ({
               onChange={(e) => setIncludeDemo(e.target.checked)}
               className="rounded border-warm-grey text-olive focus:ring-olive w-4 h-4"
             />
-            <span>Include Simulated Demo Colleges</span>
+            <span className="text-xs font-sans text-charcoal-muted">Include Simulated Demo Campuses</span>
           </label>
 
           <button
             onClick={() => fetchColleges(query, includeDemo)}
-            title="Refresh from PostgreSQL"
-            className="p-2 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light border border-warm-grey"
+            title="Refresh records from PostgreSQL"
+            className="p-2 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light border border-warm-grey transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -123,7 +124,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="editorial-card p-6 bg-card animate-pulse space-y-4">
-              <div className="h-5 bg-warm-grey rounded w-3/4" />
+              <div className="h-6 bg-warm-grey rounded w-3/4" />
               <div className="h-4 bg-warm-grey rounded w-1/2" />
               <div className="h-20 bg-warm-grey-light rounded w-full mt-4" />
             </div>
@@ -141,20 +142,27 @@ export const CollegeList: React.FC<CollegeListProps> = ({
           ))}
         </div>
       ) : (
-        /* Empty State */
-        <div className="editorial-card p-12 text-center bg-card max-w-xl mx-auto my-12">
-          <div className="w-12 h-12 rounded-full bg-warm-grey-light flex items-center justify-center mx-auto mb-4 text-charcoal-muted">
-            <Filter className="w-6 h-6" />
+        /* Illustrated Empty State */
+        <div className="editorial-card p-8 sm:p-12 text-center bg-card max-w-xl mx-auto my-12 border-warm-grey shadow-card">
+          <div className="w-48 h-32 mx-auto mb-6">
+            <img
+              src="/images/empty_search.svg"
+              alt="No colleges found illustration"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h3 className="font-serif text-2xl font-bold text-charcoal mb-2">
             No Colleges Found
           </h3>
           <p className="text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto mb-6 leading-relaxed">
             {query
-              ? `No registered institutions match '${query}'. You can add your college now to start collecting student experiences.`
+              ? `No registered institutions match '${query}'. You can add your college to the registry with a starting score of 100.`
               : "No institutions found matching your filter criteria."}
           </p>
-          <button onClick={onOpenUnknownModal} className="btn-primary text-xs py-2 px-5">
+          <button
+            onClick={onOpenUnknownModal}
+            className="btn-primary text-xs py-2.5 px-6 font-semibold"
+          >
             <PlusCircle className="w-4 h-4" />
             <span>Add This College to Directory</span>
           </button>
