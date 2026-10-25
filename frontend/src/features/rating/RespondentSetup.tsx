@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { School, GraduationCap, AlertCircle, ArrowRight, Building2 } from "lucide-react";
+import { School, GraduationCap, AlertCircle, ArrowRight, Building2, Mail, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import { getClientUUID, setDeclaredCollegeId, setRespondentId } from "../../lib/storage";
+import { validateCollegeEmail } from "../../lib/emailValidation";
 import type { CollegeSummary } from "../../types/college";
 import type { Affiliation, RatingSessionResponse } from "../../types/rating";
 
@@ -20,6 +21,8 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
   const [selectedCollegeId, setSelectedCollegeId] = useState<string>(initialCollegeId || "");
   const [affiliation, setAffiliation] = useState<Affiliation>("current_student");
   const [displayName, setDisplayName] = useState("");
+  const [collegeEmail, setCollegeEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [loadingColleges, setLoadingColleges] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +51,26 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
     };
   }, []);
 
+  const selectedCollege = colleges.find((c) => c.college_id === selectedCollegeId);
+  const emailValidation = validateCollegeEmail(collegeEmail, selectedCollege, colleges);
+  const canSubmit = Boolean(
+    selectedCollegeId &&
+    collegeEmail.trim() &&
+    emailValidation.isValid &&
+    !submitting &&
+    !loadingColleges
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCollegeId) {
       setError("Please select a college to rate.");
+      return;
+    }
+
+    if (!collegeEmail.trim() || !emailValidation.isValid) {
+      setEmailTouched(true);
+      setError(emailValidation.error || "Please enter a valid official college email ID.");
       return;
     }
 
@@ -61,12 +80,13 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
     const clientUuid = getClientUUID();
 
     try {
-      // 1. Create / update respondent
+      // 1. Create / update respondent with verified college email
       const respondent = await api.createRespondent({
         client_uuid: clientUuid,
         declared_college_id: selectedCollegeId,
         affiliation: affiliation,
         display_name: displayName.trim() || undefined,
+        college_email: collegeEmail.trim().toLowerCase(),
       });
 
       setDeclaredCollegeId(selectedCollegeId);
@@ -88,6 +108,8 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
           err.detail ||
             "You have already submitted an official rating for this college. Each respondent profile can submit only once."
         );
+      } else if (err instanceof ApiError && (err.status === 400 || err.status === 403)) {
+        setError(err.detail || err.message);
       } else {
         setError(err.message || "Unable to start rating session. Please try again.");
       }
@@ -95,6 +117,7 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="py-12 px-4 max-w-2xl mx-auto font-sans">
@@ -156,6 +179,67 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
                 Notice: Seeded demo institutions (St. Jude Demo and Apex Demo) allow testing real-time score shifts (100 → 99 or 100 → 101) without altering real colleges.
               </p>
             )}
+          </div>
+
+          {/* Official College Email Input */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal">
+                Official College Email Address *
+              </label>
+              {selectedCollege?.email_domains && (
+                <span className="text-[11px] font-mono text-olive bg-warm-grey-light px-2 py-0.5 rounded border border-warm-grey">
+                  Domain: {selectedCollege.email_domains.split(",").map((d) => `@${d.trim()}`).join(", ")}
+                </span>
+              )}
+            </div>
+
+            <div className="relative">
+              <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-3 pointer-events-none" />
+              <input
+                type="email"
+                required
+                value={collegeEmail}
+                onChange={(e) => {
+                  setCollegeEmail(e.target.value);
+                  if (error) setError(null);
+                }}
+                onBlur={() => setEmailTouched(true)}
+                placeholder={
+                  selectedCollege?.email_domains
+                    ? `e.g. yourname@${selectedCollege.email_domains.split(",")[0].trim()}`
+                    : "e.g. yourname@college.ac.in"
+                }
+                className={`w-full pl-9 pr-4 py-2.5 text-sm bg-paper border rounded focus:outline-none font-sans text-charcoal transition-all ${
+                  emailTouched && !emailValidation.isValid
+                    ? "border-rose-400 focus:border-rose-500 bg-rose-50/20"
+                    : emailValidation.isVerifiedMatch
+                    ? "border-emerald-600 focus:border-emerald-700 bg-emerald-50/15"
+                    : "border-warm-grey focus:border-olive"
+                }`}
+              />
+            </div>
+
+            {/* Live Inline Error / Verification Feedback */}
+            {emailTouched && !emailValidation.isValid && (
+              <div className="mt-2 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                <span className="leading-snug">{emailValidation.error}</span>
+              </div>
+            )}
+
+            {emailValidation.isVerifiedMatch && (
+              <div className="mt-2 p-2 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="leading-snug">
+                  Verified institutional domain for <strong>{selectedCollege?.name}</strong>.
+                </span>
+              </div>
+            )}
+
+            <p className="text-[11px] text-charcoal-muted mt-1.5 leading-relaxed font-sans">
+              Generic webmail (@gmail.com, @yahoo.com) and cross-college voting are strictly disallowed. You can only rate the institution matching your official email.
+            </p>
           </div>
 
           {/* Affiliation Radios */}
@@ -247,8 +331,17 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
 
             <button
               type="submit"
-              disabled={submitting || loadingColleges}
-              className="btn-primary text-xs py-2.5 px-6"
+              disabled={!canSubmit}
+              title={
+                !collegeEmail.trim()
+                  ? "Please enter your college email address"
+                  : !emailValidation.isValid
+                  ? emailValidation.error
+                  : undefined
+              }
+              className={`btn-primary text-xs py-2.5 px-6 transition-opacity ${
+                !canSubmit ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               {submitting ? (
                 <span>Starting Session...</span>

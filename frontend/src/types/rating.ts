@@ -7,6 +7,7 @@ export interface CreateRespondentRequest {
   declared_college_id: string;
   affiliation: Affiliation;
   display_name?: string;
+  college_email?: string;
 }
 
 export interface RespondentResponse {
@@ -15,6 +16,7 @@ export interface RespondentResponse {
   declared_college_id: string;
   affiliation: Affiliation;
   display_name?: string | null;
+  college_email?: string | null;
   is_verified: boolean;
   created_at: string;
 }

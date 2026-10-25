@@ -9,6 +9,7 @@ export interface CollegeSummary {
   total_submitted_sessions: number;
   current_student_submissions: number;
   alumni_submissions: number;
+  email_domains?: string | null;
   created_at?: string;
 }
 
@@ -53,4 +54,5 @@ export interface CreateCollegeRequest {
   city: string;
   state: string;
   short_code?: string;
+  email_domains?: string;
 }

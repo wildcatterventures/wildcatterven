@@ -17,6 +17,7 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
   const [step, setStep] = useState<"form" | "confirm" | "creating">("form");
   const [error, setError] = useState<string | null>(null);
 
@@ -40,11 +41,13 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
         name: name.trim(),
         city: city.trim(),
         state: stateName.trim(),
+        email_domains: emailDomain.trim() || undefined,
       });
       // Reset form
       setName("");
       setCity("");
       setStateName("");
+      setEmailDomain("");
       setStep("form");
       onCollegeCreated(created);
     } catch (err: any) {
@@ -144,6 +147,22 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
                   placeholder="e.g. Gujarat"
                   className="w-full px-3 py-2 text-sm bg-card border border-warm-grey rounded focus:outline-none focus:border-olive focus:ring-1 focus:ring-olive font-sans"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-charcoal mb-1">
+                  Official Email Domain (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={emailDomain}
+                  onChange={(e) => setEmailDomain(e.target.value.toLowerCase().trim())}
+                  placeholder="e.g. bits-pilani.ac.in"
+                  className="w-full px-3 py-2 text-sm bg-card border border-warm-grey rounded focus:outline-none focus:border-olive focus:ring-1 focus:ring-olive font-sans"
+                />
+                <p className="text-[10px] text-charcoal-muted mt-1">
+                  Enables domain validation for students voting for this institution.
+                </p>
               </div>
             </div>
 
