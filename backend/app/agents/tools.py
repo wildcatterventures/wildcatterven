@@ -151,6 +151,10 @@ APPROVED_TOOLS_SPEC: List[Dict[str, Any]] = [
                         "type": "string",
                         "description": "Optional display name.",
                     },
+                    "college_email": {
+                        "type": "string",
+                        "description": "Official institutional email ID (e.g. user@sfit.ac.in). Must match declared college domain.",
+                    },
                 },
                 "required": ["college_id", "respondent_client_uuid", "affiliation"],
             },
@@ -308,6 +312,7 @@ async def execute_tool(
             client_uuid = UUID(str(arguments["respondent_client_uuid"]))
             affiliation = str(arguments["affiliation"])
             name = arguments.get("respondent_name")
+            college_email = arguments.get("college_email") or arguments.get("respondent_college_email")
 
             # 1. Upsert respondent
             resp_req = CreateRespondentRequest(
@@ -315,6 +320,7 @@ async def execute_tool(
                 declared_college_id=col_id,
                 affiliation=affiliation,
                 display_name=name,
+                college_email=college_email,
             )
             respondent = await create_or_update_respondent(conn, resp_req)
 

@@ -44,7 +44,7 @@ async def create_rating_session(
 
     # 2. Fetch respondent
     respondent = await conn.fetchrow(
-        "SELECT id, declared_college_id, affiliation FROM people WHERE id = $1;",
+        "SELECT id, declared_college_id, affiliation, college_email FROM people WHERE id = $1;",
         respondent_id,
     )
     if not respondent:
@@ -59,6 +59,12 @@ async def create_rating_session(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Respondent's declared college does not match this college.",
         )
+
+    # 3b. Double-check college email domain affinity if set
+    if respondent["college_email"]:
+        from app.services.email_validation import validate_college_email_affinity
+        await validate_college_email_affinity(conn, respondent["college_email"], college_id)
+
 
     # 4. Check if respondent already has a submitted session for this college
     submitted_exists = await conn.fetchval(

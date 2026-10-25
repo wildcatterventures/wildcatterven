@@ -50,7 +50,7 @@ async def search_colleges(
         SELECT 
             college_id, name, short_code, city, state, is_demo,
             current_score, total_submitted_sessions,
-            current_student_submissions, alumni_submissions, created_at
+            current_student_submissions, alumni_submissions, email_domains, created_at
         FROM v_college_summary
         {where_sql}
         ORDER BY is_demo ASC, name ASC;
@@ -69,7 +69,7 @@ async def get_college_by_id(
             college_id, name, short_code, city, state, is_demo,
             current_score, total_qualifying_low, total_qualifying_neutral,
             total_qualifying_high, last_event_at, total_submitted_sessions,
-            current_student_submissions, alumni_submissions, created_at
+            current_student_submissions, alumni_submissions, email_domains, created_at
         FROM v_college_summary
         WHERE college_id = $1;
     """
@@ -260,17 +260,20 @@ async def create_college(
         suffix += 1
         short_code = f"{base_code}-{suffix}"
 
+    clean_email_domains = req.email_domains.strip().lower() if req.email_domains else None
+
     try:
         new_id = await conn.fetchval(
             """
-            INSERT INTO colleges (name, short_code, city, state, is_demo)
-            VALUES ($1, $2, $3, $4, FALSE)
+            INSERT INTO colleges (name, short_code, city, state, is_demo, email_domains)
+            VALUES ($1, $2, $3, $4, FALSE, $5)
             RETURNING id;
             """,
             req.name,
             short_code,
             req.city,
             req.state,
+            clean_email_domains,
         )
     except asyncpg.UniqueViolationError as exc:
         raise HTTPException(
