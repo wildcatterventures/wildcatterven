@@ -22,6 +22,7 @@ from app.main import create_app
 SFIT_ID = UUID("c0000000-0000-0000-0000-000000000001")
 JUDE_DEMO_ID = UUID("c0000000-0000-0000-0000-000000000002")
 APEX_DEMO_ID = UUID("c0000000-0000-0000-0000-000000000003")
+IITB_ID = UUID("dfa099b3-eae4-4833-869f-b05774cc586c")
 
 PARAM_KEYS = [
     "food", "ragging", "professor_quality", "toilet_quality", "classroom_quality",
@@ -71,6 +72,10 @@ class MockAsyncpgConnection:
             params.sort(key=lambda x: x.get("display_order", 0))
             return params
 
+        # colleges with registered email_domains
+        if "FROM colleges WHERE email_domains IS NOT NULL" in q:
+            return [copy.deepcopy(c) for c in self.db_state["colleges"].values() if c.get("email_domains")]
+
         # v_college_summary listing
         if "FROM v_college_summary" in q:
             colleges = list(self.db_state["colleges"].values())
@@ -100,6 +105,7 @@ class MockAsyncpgConnection:
                     "total_submitted_sessions": len(sessions),
                     "current_student_submissions": cur_student_cnt,
                     "alumni_submissions": alumni_cnt,
+                    "email_domains": c.get("email_domains"),
                     "created_at": c["created_at"],
                 }
                 res.append(item)
@@ -218,6 +224,7 @@ class MockAsyncpgConnection:
                 "total_submitted_sessions": len(sessions),
                 "current_student_submissions": len([s for s in sessions if s.get("respondent_role") == "current_student"]),
                 "alumni_submissions": len([s for s in sessions if s.get("respondent_role") == "alumnus"]),
+                "email_domains": c.get("email_domains"),
                 "created_at": c["created_at"],
             }
 
@@ -267,24 +274,35 @@ class MockAsyncpgConnection:
 
         # update people
         if "UPDATE people" in q:
-            pid, declared_id, affil, disp_name = args[0], args[1], args[2], args[3]
+            pid = args[0]
+            declared_id = args[1]
+            affil = args[2]
+            disp_name = args[3]
+            email = args[4] if len(args) > 4 else None
             p = self.db_state["people"].get(pid)
             if p:
                 p["declared_college_id"] = declared_id
                 p["affiliation"] = affil
                 p["display_name"] = disp_name
+                if email is not None or "college_email" not in p:
+                    p["college_email"] = email
                 return copy.deepcopy(p)
 
         # insert people
         if "INSERT INTO people" in q:
             new_id = uuid4()
-            cuuid, disp_name, declared_id, affil = args[0], args[1], args[2], args[3]
+            cuuid = args[0]
+            disp_name = args[1]
+            declared_id = args[2]
+            affil = args[3]
+            email = args[4] if len(args) > 4 else None
             row = {
                 "id": new_id,
                 "client_uuid": cuuid,
                 "display_name": disp_name,
                 "declared_college_id": declared_id,
                 "affiliation": affil,
+                "college_email": email,
                 "is_verified": False,
                 "created_at": datetime.now(timezone.utc),
             }
@@ -559,6 +577,17 @@ def build_seeded_db_state() -> Dict[str, Any]:
             "city": "Mumbai",
             "state": "Maharashtra",
             "is_demo": False,
+            "email_domains": "sfit.ac.in",
+            "created_at": now,
+        },
+        IITB_ID: {
+            "id": IITB_ID,
+            "name": "Indian Institute of Technology Bombay",
+            "short_code": "IITB",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "is_demo": False,
+            "email_domains": "iitb.ac.in",
             "created_at": now,
         },
         JUDE_DEMO_ID: {
@@ -568,6 +597,7 @@ def build_seeded_db_state() -> Dict[str, Any]:
             "city": "Bhopal",
             "state": "Madhya Pradesh",
             "is_demo": True,
+            "email_domains": "stjude.edu,demo.stjude.edu",
             "created_at": now,
         },
         APEX_DEMO_ID: {
@@ -577,6 +607,7 @@ def build_seeded_db_state() -> Dict[str, Any]:
             "city": "Coimbatore",
             "state": "Tamil Nadu",
             "is_demo": True,
+            "email_domains": "apex.edu,demo.apex.edu",
             "created_at": now,
         },
     }
