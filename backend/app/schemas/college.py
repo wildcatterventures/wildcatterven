@@ -10,6 +10,7 @@ class CreateCollegeRequest(BaseModel):
     city: str = Field(..., min_length=2, max_length=100, description="City where the campus is located")
     state: str = Field(..., min_length=2, max_length=100, description="State or province")
     short_code: Optional[str] = Field(None, min_length=2, max_length=30, description="Optional custom short code")
+    email_domains: Optional[str] = Field(None, max_length=200, description="Optional comma-separated approved institutional domains")
 
     @field_validator("name", "city", "state")
     @classmethod
@@ -32,7 +33,9 @@ class CollegeSummary(BaseModel):
     total_submitted_sessions: int = 0
     current_student_submissions: int = 0
     alumni_submissions: int = 0
+    email_domains: Optional[str] = None
     created_at: Optional[datetime] = None
+
 
 
 class CollegeDetail(CollegeSummary):

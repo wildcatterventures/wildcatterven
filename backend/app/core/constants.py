@@ -29,3 +29,26 @@ SESSION_STATUS_ABANDONED: str = "abandoned"
 AFFILIATION_CURRENT_STUDENT: str = "current_student"
 AFFILIATION_ALUMNUS: str = "alumnus"
 VALID_AFFILIATIONS: set[str] = {AFFILIATION_CURRENT_STUDENT, AFFILIATION_ALUMNUS}
+
+# Email Verification & Anti-Abuse Constants
+DISALLOWED_FREE_DOMAINS: set[str] = {
+    "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+    "ymail.com", "hotmail.com", "outlook.com", "live.com", "msn.com",
+    "icloud.com", "me.com", "mac.com", "aol.com", "zoho.com", "zohomail.com",
+    "proton.me", "protonmail.com", "mail.com", "gmx.com", "gmx.net",
+    "yandex.com", "rediffmail.com", "fastmail.com", "tutanota.com", "inbox.com",
+}
+
+DISALLOWED_DISPOSABLE_DOMAINS: set[str] = {
+    "tempmail.com", "10minutemail.com", "mailinator.com", "guerrillamail.com",
+    "yopmail.com", "trashmail.com", "sharklasers.com", "dispostable.com",
+    "fakeinbox.com", "getairmail.com", "throwawaymail.com", "maildrop.cc",
+    "test.com", "example.com", "domain.com", "xyz.com", "asdf.com", "foo.com",
+    "temp-mail.org", "burnermail.io", "nada.ltd", "mohmal.com",
+}
+
+VALID_ACADEMIC_TLD_SUFFIXES: tuple[str, ...] = (
+    ".ac.in", ".edu.in", ".res.in", ".ernet.in", ".edu",
+    ".ac.uk", ".edu.au", ".edu.sg", ".ac.nz", ".ac.za",
+)
+

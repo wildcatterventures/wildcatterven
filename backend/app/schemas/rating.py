@@ -15,6 +15,7 @@ class CreateRespondentRequest(BaseModel):
     declared_college_id: UUID = Field(..., description="College UUID the respondent claims affiliation with")
     affiliation: str = Field(..., description="Must be 'current_student' or 'alumnus'")
     display_name: Optional[str] = Field(None, max_length=100, description="Optional public display name")
+    college_email: Optional[str] = Field(None, max_length=255, description="Official college-issued email ID")
 
     @model_validator(mode="after")
     def validate_affiliation(self) -> "CreateRespondentRequest":
@@ -22,6 +23,8 @@ class CreateRespondentRequest(BaseModel):
             raise ValueError(f"affiliation must be one of {sorted(VALID_AFFILIATIONS)}")
         if self.display_name:
             self.display_name = self.display_name.strip() or None
+        if self.college_email:
+            self.college_email = self.college_email.strip().lower() or None
         return self
 
 
@@ -32,8 +35,10 @@ class RespondentResponse(BaseModel):
     declared_college_id: UUID
     affiliation: str
     display_name: Optional[str] = None
+    college_email: Optional[str] = None
     is_verified: bool = False
     created_at: datetime
+
 
 
 class CreateSessionRequest(BaseModel):
