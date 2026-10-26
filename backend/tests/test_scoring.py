@@ -56,6 +56,35 @@ def test_category_boundaries_around_four_and_eight():
     assert classify_category(None) is None
 
 
+def test_exact_assignment_boundary_values():
+    """
+    Verify assignment exact boundary values:
+    - 3.99 -> low
+    - 4.00 -> neutral
+    - 7.99 -> neutral
+    - 8.00 -> high (CRITICAL: 8.00 must qualify as high, not neutral)
+    """
+    assert classify_category(3.99) == CATEGORY_LOW
+    assert classify_category(4.00) == CATEGORY_NEUTRAL
+    assert classify_category(7.99) == CATEGORY_NEUTRAL
+    assert classify_category(8.00) == CATEGORY_HIGH
+
+
+def test_unrounded_arithmetic_mean_preserves_category_boundaries():
+    """
+    Verify arithmetic mean is unrounded when determining category:
+    - Mean 7.996: if rounded to 1 or 2 decimals it would be 8.0, but unrounded it must remain neutral.
+    - Mean 3.996: if rounded to 1 or 2 decimals it would be 4.0, but unrounded it must remain low.
+    """
+    # 7.996 is strictly < 8.0 -> neutral
+    mean_near_high = 7.996
+    assert classify_category(mean_near_high) == CATEGORY_NEUTRAL
+
+    # 3.996 is strictly < 4.0 -> low
+    mean_near_neutral = 3.996
+    assert classify_category(mean_near_neutral) == CATEGORY_LOW
+
+
 def test_initial_base_score_is_one_hundred():
     """Verify the platform base score constant is strictly 100."""
     assert BASE_SCORE == 100

@@ -242,7 +242,19 @@ async def execute_tool(
         if tool_name == "search_colleges":
             query = arguments.get("query", "")
             demo = bool(arguments.get("demo", False))
-            results = await search_colleges(conn, query=query, include_demo=demo)
+            visitor_id = None
+            if arguments.get("respondent_client_uuid"):
+                try:
+                    visitor_id = UUID(str(arguments["respondent_client_uuid"]))
+                except ValueError:
+                    pass
+            results = await search_colleges(
+                conn,
+                query=query,
+                include_demo=demo,
+                visitor_session_id=visitor_id,
+                input_mode="text",
+            )
             return {
                 "count": len(results),
                 "colleges": [r.model_dump(mode="json") for r in results],

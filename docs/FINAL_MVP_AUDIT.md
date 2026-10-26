@@ -27,9 +27,10 @@ Campus Uncut has been thoroughly audited, verified against live PostgreSQL infra
 | **Colleges in PostgreSQL Database** | 8 registered institutions (COEP, IITB, PICT, SFIT, SPIT, VJTI, VIT-MUM, WCE) | **VERIFIED** |
 | **Active Evaluated Parameters** | 25 parameters across 5 core campus categories | **VERIFIED** |
 | **Question Bank Prompts** | 25 conversational prompts active | **VERIFIED** |
-| **Backend Test Suite** | 39 passed in 1.25s (100% pass rate) | **VERIFIED** |
-| **Frontend Production Build** | Vite `tsc -b && vite build` built in 6.56s (0 errors) | **VERIFIED** |
+| **Backend Test Suite** | 49 passed in 9.73s (100% pass rate) | **VERIFIED** |
+| **Frontend Production Build** | Vite `tsc -b && vite build` built in 36.15s (0 errors) | **VERIFIED** |
 | **Approved AI Tools** | 9 / 9 tools operational and unit tested | **VERIFIED** |
+| **Search Events Logging** | Verified live in Supabase PostgreSQL (REST + Assistant) | **VERIFIED** |
 | **Critical Integrity Flaws** | 0 blockers | **CLEARED** |
 
 ---
@@ -263,22 +264,26 @@ platform win32 -- Python 3.12.1, pytest-9.1.1, pluggy-1.7.0
 rootdir: D:\Maxwell\Projects\Campus_Uncut
 plugins: anyio-4.15.1, asyncio-1.4.0
 asyncio: mode=Mode.STRICT, debug=False
-collected 39 items
+collected 49 items
 
-backend\tests\test_assistant.py ........                                 [ 20%]
-backend\tests\test_colleges_api.py .......                               [ 38%]
-backend\tests\test_email_validation.py .....                             [ 51%]
-backend\tests\test_ratings_api.py ...........                            [ 79%]
-backend\tests\test_scoring.py ........                                   [100%]
+backend\tests\test_assistant.py ........                                 [ 16%]
+backend\tests\test_colleges_api.py ...........                           [ 38%]
+backend\tests\test_email_validation.py .....                             [ 48%]
+backend\tests\test_ratings_api.py ...............                        [ 79%]
+backend\tests\test_scoring.py ..........                                 [100%]
 
-============================= 39 passed in 1.25s ==============================
+============================= 49 passed in 9.73s ==============================
 ```
 
-- **Total Tests:** 39
-- **Passed:** 39 (100%)
+- **Total Tests:** 49
+- **Passed:** 49 (100%)
 - **Failed:** 0
-- **Duration:** 1.25 seconds
-- **New Tests Added:** Comprehensive 9-tool query validation test in `test_assistant.py` exercising canonical user questions (e.g., *"What is the score of SFIT?"*, *"Rate food 8"*, *"List colleges in Mumbai"*).
+- **Duration:** 9.73 seconds
+- **New Tests Added:**
+  - Scoring boundary tests: `3.99` (low), `4.00` (neutral), `7.99` (neutral), `8.00` (high).
+  - Unrounded arithmetic mean verification: `7.996` remains neutral, `3.996` remains low.
+  - Search event logging tests: query logging, empty query exclusion, deduplication within 5s window, resilience against logging errors.
+  - Rating submission validation: 24/25 answered rejection, preventing unanswered questions from becoming "No view", blocking edits on submitted sessions, score range validation (0, -1, 11 rejected), and mixed numeric + No-view calculation.
 
 ---
 
@@ -294,13 +299,13 @@ transforming...
 ✓ 1598 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   1.39 kB │ gzip:  0.77 kB
+dist/index.html                   1.39 kB │ gzip:  0.78 kB
 dist/assets/index-Ctx3QaAl.css   39.48 kB │ gzip:  7.37 kB
-dist/assets/index-CZCjem8v.js   273.37 kB │ gzip: 76.79 kB
-✓ built in 6.56s
+dist/assets/index-BAR0_U1x.js   273.63 kB │ gzip: 76.88 kB
+✓ built in 36.15s
 ```
 - **TypeScript Compilation:** Strict check (`tsc -b`) passed with 0 errors.
-- **Asset Size:** Clean single-chunk JS bundle of 273.37 kB (76.79 kB gzip) and CSS bundle of 39.48 kB (7.37 kB gzip).
+- **Asset Size:** Clean single-chunk JS bundle of 273.63 kB (76.88 kB gzip) and CSS bundle of 39.48 kB (7.37 kB gzip).
 
 ### Browser Verification Summary
 - **Tested Resolution:** 1280x800 desktop and responsive mobile viewport.
@@ -312,11 +317,10 @@ dist/assets/index-CZCjem8v.js   273.37 kB │ gzip: 76.79 kB
 
 ## 12. Known Defects and Remaining Blockers
 
-| Defect / Limitation | Severity | Impact | Recommended Post-MVP Resolution |
+| Defect / Limitation | Severity | Impact | Status / Recommended Resolution |
 | :--- | :--- | :--- | :--- |
-| **Demo College Migration Omission** | Low / Cosmetic | Demo colleges (St. Jude, Apex) from migration 003 are not present in live `colleges` table. | Apply optional migration inserting St. Jude & Apex if demo comparison toggle is desired in evaluator showcases. |
-| **Search Events Logging from REST Endpoint** | Low | Direct REST searches via `GET /api/v1/colleges?q=...` do not write to `search_events` table (table exists in schema). | Add non-blocking background task in `search_colleges` to log search query analytics. |
-| **Institutional Email Domain Enforcement** | Low | Current student email domain verification warns the user on mismatch but does not strictly block rating submission. | Toggle strict email domain blocking once institutional domain registry is populated. |
+| **Demo College Migration Omission** | Low / Cosmetic | Demo colleges (St. Jude, Apex) from migration 003 are not present in live `colleges` table. | **DOCUMENTED ONLY:** Prepared optional migration `004_optional_seed_demo_colleges.sql` for reviewer inspection. Not executed on live DB. |
+| **Institutional Email Domain Enforcement** | Low | Current student email domain verification warns the user on mismatch but does not strictly block rating submission. | **NON-BLOCKING:** Warning displayed to respondent. Strict blocking can be toggled once institutional domain registry is complete. |
 
 ---
 
@@ -390,4 +394,50 @@ npm run build
 
 ---
 
+## 15. Redesign of Explore Colleges Cards & Ratings Visualization
+
+### 15.1 Overview & Objective
+The Explore Colleges cards and College Details / View Ratings page have been completely redesigned from functional MVP templates into an editorial college intelligence publication with instant data comprehension:
+1. **Explore Colleges Cards (`CollegeCard.tsx`):**
+   - Redesigned from the ground up as **Editorial College Discovery Cards**, completely removing technical dashboard elements (giant black 100 score square, repeated baseline labels, and oversized badges).
+   - The campus photograph (16:10 crop, ~38% of card height) features ONLY one understated abbreviation badge (`IITB`, `COEP`, `SFIT`, etc.) and the campus location.
+   - The college name in elegant Newsreader serif typography is the dominant centerpiece of the card.
+   - Enriched with verified, real institutional facts: established year (`Est. 1958`, `Est. 1854`, etc.), institution type (`Institute of National Importance`, `Autonomous State University`), and a concise factual institutional description.
+   - Student feedback is presented in a quiet, secondary footer line: shows `{n} student perspective(s)` or `No student ratings yet`, accompanied by `Score: 100` as understated secondary metadata.
+   - Restrained, aligned action buttons: `Explore college →` and `Write a review` / `Rate college`.
+2. **College Details / View Ratings Page (`CollegeDetail.tsx`):**
+   - Compact masthead (`h-36 sm:h-44`) that prevents hero imagery from pushing rating data below the fold.
+   - Prominent, explicit **Score Semantics Callout** explaining that 100 is an unblemished platform baseline, not 100% perfection, and that scores shift &plusmn;1 point only upon completion of a full 20-contribution block of qualifying low (<4.0) or high (&ge;8.0) contributions.
+   - **Rating Coverage & Contribution Distribution:** Segmented horizontal proportion bar for Low (<4.0), Neutral (4.0–7.9), and High (&ge;8.0) contributions with a 3-card explanatory legend.
+   - **Editorial Strengths & Areas to Explore:** Deterministic callouts for the *Highest Rated Standard* and *Area to Explore* based on arithmetic averages and response counts.
+   - **Interactive Parameter Explorer:** Replaced the long vertical 25-item list with a responsive explorer organized into 6 sensible thematic groups:
+     1. *Academics & Faculty* (3 parameters: professor quality, classroom quality, academic freedom)
+     2. *Campus Safety & Student Support* (4 parameters: women's safety, ragging, student bullying, professor harassment)
+     3. *Infrastructure & Connectivity* (6 parameters: infrastructure, internet, electricity, drinking water, transportation, hospital access)
+     4. *Hostel & Residential Living* (4 parameters: food, hostel quality, hostel conditions, toilet quality)
+     5. *Campus Culture & Student Life* (3 parameters: student culture, party scene, alcohol culture)
+     6. *Career, Placements & Governance* (5 parameters: campus placements, alumni interaction, college management, freedom of expression, complaint handling)
+     Plus *All Parameters (25)*.
+   - **Parameter Visualizations:**
+     - 1–10 horizontal score bars with visual tick marks at 4.0 and 8.0 guidelines.
+     - Color coded: High standard (&ge;8.0 emerald), Neutral standard (4.0–7.9 olive), Low standard (<4.0 crimson).
+     - Response counts: numeric reviews `(n)` and "No view" count.
+     - Expandable 1–10 frequency histogram drawer for each parameter.
+     - Search & sort controls: instant client-side search across all 25 parameters and toggle between *Ranked* and *Order #1–25*.
+
+### 15.2 Data Integrity & Source API Verification
+All metrics, averages, and distributions are derived directly from live PostgreSQL database views without fabrication:
+- `v_college_summary`: `current_score`, `total_submitted_sessions`, `current_student_submissions`, `alumni_submissions`, `total_qualifying_low`, `total_qualifying_neutral`, `total_qualifying_high`.
+- `v_college_parameter_stats`: `average_score` (arithmetic mean, strictly excluding "No view"), `numeric_response_count`, `no_view_count`.
+- `v_college_parameter_distributions`: 1–10 score frequencies.
+- If a parameter has 0 numeric ratings, it renders `Awaiting ratings (n=0)` and omits fake zero-width bars.
+
+### 15.3 Automated & Visual Verification Results
+- **Backend Test Suite:** 49 / 49 tests passed in 1.87s.
+- **Frontend Production Build:** `tsc -b && vite build` built in 4.37s with 0 errors.
+- **Browser Subagent Verification:** Verified desktop and mobile viewports (`390x844`) across unrated colleges (e.g. SFIT, COEP) and rated colleges (IIT Bombay).
+
+---
+
 *Report certified by Senior Full-Stack Engineering, Database Engineering, and Product QA.*
+

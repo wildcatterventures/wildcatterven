@@ -419,3 +419,157 @@ async def test_failed_transaction_does_not_leave_partial_score_changes(mock_conn
     assert post_low == init_low
 
 
+@pytest.mark.asyncio
+async def test_submitting_session_with_24_answers_fails_with_missing_parameter(client: AsyncClient):
+    """Verify answering 24 parameters and leaving 1 unanswered returns 422 and never silently defaults to No-view."""
+    client_uuid = str(uuid4())
+    resp = await client.post(
+        "/api/respondents",
+        json={
+            "client_uuid": client_uuid,
+            "declared_college_id": str(SFIT_ID),
+            "affiliation": "current_student",
+        },
+    )
+    respondent_id = resp.json()["id"]
+
+    sess_resp = await client.post(
+        "/api/rating-sessions",
+        json={"college_id": str(SFIT_ID), "respondent_id": respondent_id},
+    )
+    session_id = sess_resp.json()["id"]
+
+    ratings_report = (await client.get(f"/api/colleges/{SFIT_ID}/ratings")).json()
+    params = ratings_report["parameters"]
+
+    # Answer only the first 24 parameters
+    for p in params[:24]:
+        await client.put(
+            f"/api/rating-sessions/{session_id}/answers/{p['parameter_id']}",
+            json={"score": 7, "is_no_view": False},
+        )
+
+    # 25th parameter left unanswered
+    sub_resp = await client.post(f"/api/rating-sessions/{session_id}/submit")
+    assert sub_resp.status_code == 422
+    err_data = sub_resp.json()["detail"]
+    assert "missing" in str(err_data).lower()
+    missing_id = params[24]["parameter_id"]
+    assert missing_id in err_data.get("missing_parameter_ids", [])
+
+
+@pytest.mark.asyncio
+async def test_editing_answers_on_submitted_session_returns_http_409(client: AsyncClient):
+    """Verify that once a session is submitted, answers cannot be edited or added."""
+    client_uuid = str(uuid4())
+    resp = await client.post(
+        "/api/respondents",
+        json={
+            "client_uuid": client_uuid,
+            "declared_college_id": str(SFIT_ID),
+            "affiliation": "alumnus",
+        },
+    )
+    respondent_id = resp.json()["id"]
+
+    sess_resp = await client.post(
+        "/api/rating-sessions",
+        json={"college_id": str(SFIT_ID), "respondent_id": respondent_id},
+    )
+    session_id = sess_resp.json()["id"]
+
+    ratings_report = (await client.get(f"/api/colleges/{SFIT_ID}/ratings")).json()
+    for p in ratings_report["parameters"]:
+        await client.put(
+            f"/api/rating-sessions/{session_id}/answers/{p['parameter_id']}",
+            json={"score": 8, "is_no_view": False},
+        )
+
+    # Submit session
+    sub_resp = await client.post(f"/api/rating-sessions/{session_id}/submit")
+    assert sub_resp.status_code == 200
+
+    # Attempt to edit an answer after submission
+    first_param = ratings_report["parameters"][0]["parameter_id"]
+    edit_resp = await client.put(
+        f"/api/rating-sessions/{session_id}/answers/{first_param}",
+        json={"score": 10, "is_no_view": False},
+    )
+    assert edit_resp.status_code == 409
+    assert "cannot edit" in edit_resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_scores_below_one_and_above_ten_are_rejected(client: AsyncClient):
+    """Verify score 0, negative scores, and scores > 10 are rejected with 422."""
+    client_uuid = str(uuid4())
+    resp = await client.post(
+        "/api/respondents",
+        json={
+            "client_uuid": client_uuid,
+            "declared_college_id": str(SFIT_ID),
+            "affiliation": "current_student",
+        },
+    )
+    respondent_id = resp.json()["id"]
+    sess_resp = await client.post(
+        "/api/rating-sessions",
+        json={"college_id": str(SFIT_ID), "respondent_id": respondent_id},
+    )
+    session_id = sess_resp.json()["id"]
+
+    ratings_report = (await client.get(f"/api/colleges/{SFIT_ID}/ratings")).json()
+    param_id = ratings_report["parameters"][0]["parameter_id"]
+
+    for invalid_score in [0, -1, 11, 100]:
+        r = await client.put(
+            f"/api/rating-sessions/{session_id}/answers/{param_id}",
+            json={"score": invalid_score, "is_no_view": False},
+        )
+        assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_mixed_numeric_and_no_view_session_calculates_mean_strictly_over_numeric(client: AsyncClient):
+    """Verify mean calculation excludes No-views and does not dilute the mean with zeroes."""
+    client_uuid = str(uuid4())
+    resp = await client.post(
+        "/api/respondents",
+        json={
+            "client_uuid": client_uuid,
+            "declared_college_id": str(SFIT_ID),
+            "affiliation": "current_student",
+        },
+    )
+    respondent_id = resp.json()["id"]
+    sess_resp = await client.post(
+        "/api/rating-sessions",
+        json={"college_id": str(SFIT_ID), "respondent_id": respondent_id},
+    )
+    session_id = sess_resp.json()["id"]
+
+    ratings_report = (await client.get(f"/api/colleges/{SFIT_ID}/ratings")).json()
+    params = ratings_report["parameters"]
+
+    # 3 numeric scores of 8 -> sum=24, count=3, mean=8.0 -> HIGH
+    for p in params[:3]:
+        await client.put(
+            f"/api/rating-sessions/{session_id}/answers/{p['parameter_id']}",
+            json={"score": 8, "is_no_view": False},
+        )
+    # Remaining 22 are No view
+    for p in params[3:]:
+        await client.put(
+            f"/api/rating-sessions/{session_id}/answers/{p['parameter_id']}",
+            json={"is_no_view": True},
+        )
+
+    sub_resp = await client.post(f"/api/rating-sessions/{session_id}/submit")
+    assert sub_resp.status_code == 200
+    data = sub_resp.json()
+    assert data["unrounded_overall_rating"] == 8.0
+    assert data["category"] == "high"
+    assert data["score_contribution_inserted"] is True
+
+
+

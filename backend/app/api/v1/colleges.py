@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from app.api.deps import get_db
 from app.schemas.college import (
     CollegeDetail,
@@ -23,10 +23,18 @@ router = APIRouter(prefix="/colleges", tags=["Colleges"])
 async def list_colleges_endpoint(
     q: Optional[str] = Query(None, description="Search term for name, city, state, or short code"),
     demo: bool = Query(False, description="Include simulated demo colleges"),
+    visitor_session_id: Optional[UUID] = Header(None, alias="X-Visitor-Session-ID"),
+    input_mode: str = Query("text", pattern="^(text|voice)$"),
     conn: asyncpg.Connection = Depends(get_db),
 ) -> List[CollegeSummary]:
-    """Search and list colleges with optional text search and demo data filtering."""
-    return await search_colleges(conn, query=q, include_demo=demo)
+    """Search and list colleges with optional text search, demo data filtering, and search analytics."""
+    return await search_colleges(
+        conn,
+        query=q,
+        include_demo=demo,
+        visitor_session_id=visitor_session_id,
+        input_mode=input_mode,
+    )
 
 
 @router.post("", response_model=CollegeDetail, status_code=status.HTTP_201_CREATED)

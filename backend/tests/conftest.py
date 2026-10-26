@@ -501,6 +501,38 @@ class MockAsyncpgConnection:
             }
             return ev_id
 
+        # Check search_events deduplication
+        if "FROM search_events" in q:
+            session_id = args[0]
+            clean_q = args[1].strip().lower()
+            window_sec = args[2] if len(args) > 2 else 5
+            now = datetime.now(timezone.utc)
+            for ev in self.db_state.get("search_events", {}).values():
+                if (
+                    ev["visitor_session_id"] == session_id
+                    and ev["query"].strip().lower() == clean_q
+                    and (now - ev["created_at"]).total_seconds() <= window_sec
+                ):
+                    return ev["id"]
+            return None
+
+        # Insert search_events returning id
+        if "INSERT INTO search_events" in q:
+            session_id, q_text, col_id, param_keys, mode = args[0], args[1], args[2], args[3], args[4]
+            ev_id = uuid4()
+            if "search_events" not in self.db_state:
+                self.db_state["search_events"] = {}
+            self.db_state["search_events"][ev_id] = {
+                "id": ev_id,
+                "visitor_session_id": session_id,
+                "query": q_text,
+                "resolved_college_id": col_id,
+                "requested_parameter_keys": param_keys,
+                "input_mode": mode,
+                "created_at": datetime.now(timezone.utc),
+            }
+            return ev_id
+
         return None
 
     async def execute(self, query: str, *args) -> None:
@@ -750,6 +782,7 @@ def build_seeded_db_state() -> Dict[str, Any]:
         "rating_answers": rating_answers,
         "score_contributions": score_contributions,
         "score_events": score_events,
+        "search_events": {},
     }
 
 

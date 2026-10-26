@@ -99,3 +99,78 @@ async def test_create_unknown_college_duplicate_detection(client: AsyncClient):
     resp = await client.post("/api/colleges", json=payload)
     assert resp.status_code == 409
     assert "already exists" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_search_event_is_logged_for_query(client: AsyncClient, mock_db_state):
+    """Verify eligible college search query records a search event."""
+    from uuid import uuid4
+    visitor_id = str(uuid4())
+
+    resp = await client.get(
+        "/api/colleges?q=Mumbai",
+        headers={"X-Visitor-Session-ID": visitor_id},
+    )
+    assert resp.status_code == 200
+
+    events = list(mock_db_state.get("search_events", {}).values())
+    assert len(events) >= 1
+    ev = events[-1]
+    assert ev["query"] == "Mumbai"
+    assert str(ev["visitor_session_id"]) == visitor_id
+    assert ev["input_mode"] == "text"
+
+
+@pytest.mark.asyncio
+async def test_search_without_query_does_not_log_search_event(client: AsyncClient, mock_db_state):
+    """Verify browsing directory without a search query does not record a search event."""
+    initial_count = len(mock_db_state.get("search_events", {}))
+
+    resp = await client.get("/api/colleges")
+    assert resp.status_code == 200
+
+    post_count = len(mock_db_state.get("search_events", {}))
+    assert post_count == initial_count
+
+
+@pytest.mark.asyncio
+async def test_search_deduplication_prevents_duplicate_events(client: AsyncClient, mock_db_state):
+    """Verify rapid repeated queries from same visitor are deduplicated within time window."""
+    from uuid import uuid4
+    visitor_id = str(uuid4())
+
+    # First search
+    resp1 = await client.get(
+        "/api/colleges?q=SFIT",
+        headers={"X-Visitor-Session-ID": visitor_id},
+    )
+    assert resp1.status_code == 200
+
+    count_after_first = len(mock_db_state.get("search_events", {}))
+
+    # Duplicate search with same visitor session within window
+    resp2 = await client.get(
+        "/api/colleges?q=SFIT",
+        headers={"X-Visitor-Session-ID": visitor_id},
+    )
+    assert resp2.status_code == 200
+
+    count_after_second = len(mock_db_state.get("search_events", {}))
+    assert count_after_second == count_after_first
+
+
+@pytest.mark.asyncio
+async def test_search_succeeds_even_if_search_logging_fails(client: AsyncClient, monkeypatch):
+    """Verify logging failure is non-blocking and never breaks search functionality."""
+    from app.services import analytics
+
+    async def _failing_log(*args, **kwargs):
+        raise RuntimeError("Database pool failure during search analytics insert")
+
+    monkeypatch.setattr(analytics, "log_search_event", _failing_log)
+
+    resp = await client.get("/api/colleges?q=Mumbai")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+

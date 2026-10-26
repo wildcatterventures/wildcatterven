@@ -11,6 +11,7 @@ from app.schemas.college import (
     ParameterDistribution,
     ParameterRating,
 )
+from app.services.analytics import log_search_event
 
 
 def generate_short_code(name: str, city: str) -> str:
@@ -28,8 +29,10 @@ async def search_colleges(
     conn: asyncpg.Connection,
     query: Optional[str] = None,
     include_demo: bool = False,
+    visitor_session_id: Optional[UUID] = None,
+    input_mode: str = "text",
 ) -> List[CollegeSummary]:
-    """Search colleges with optional query filter and demo data toggle."""
+    """Search colleges with optional query filter, demo data toggle, and non-blocking event logging."""
     where_clauses: list[str] = []
     params: list[Any] = []
 
@@ -56,7 +59,20 @@ async def search_colleges(
         ORDER BY is_demo ASC, name ASC;
     """
     rows = await conn.fetch(sql, *params)
-    return [CollegeSummary(**dict(r)) for r in rows]
+    results = [CollegeSummary(**dict(r)) for r in rows]
+
+    # Non-blocking search event logging for eligible search queries
+    if query and query.strip():
+        first_match_id = results[0].college_id if results else None
+        await log_search_event(
+            conn=conn,
+            query=query,
+            visitor_session_id=visitor_session_id,
+            resolved_college_id=first_match_id,
+            input_mode=input_mode,
+        )
+
+    return results
 
 
 async def get_college_by_id(
