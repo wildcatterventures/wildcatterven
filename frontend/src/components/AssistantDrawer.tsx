@@ -402,10 +402,30 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
             <h2 className="font-serif font-bold text-base text-charcoal">
               Campus Intelligence
             </h2>
-            <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Groq LLM Active</span>
-            </div>
+            {(() => {
+              const latestAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+              const prov = latestAssistant?.providerUsed?.toLowerCase() || "";
+              const isGroq = prov === "groq";
+              const isFallback = prov === "mock_fallback";
+              let label = "AI Assistant Ready";
+              let dotClass = "bg-emerald-500";
+              if (isGroq) {
+                label = "Groq LLM Active";
+                dotClass = "bg-emerald-500 animate-pulse";
+              } else if (isFallback) {
+                label = "Deterministic Fallback Active";
+                dotClass = "bg-amber-500";
+              } else if (prov === "mock") {
+                label = "Deterministic Engine Active";
+                dotClass = "bg-olive";
+              }
+              return (
+                <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
+                  <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                  <span>{label}</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 

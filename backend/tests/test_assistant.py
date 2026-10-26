@@ -115,3 +115,48 @@ async def test_llm_error_fallback_activates_mock_provider_safely(client: AsyncCl
         assert data["provider_used"] == "mock_fallback"
         assert len(data["tool_calls"]) >= 1
         assert data["tool_calls"][0]["tool_name"] == "search_colleges"
+
+
+@pytest.mark.asyncio
+async def test_assistant_all_nine_canonical_queries(client: AsyncClient):
+    """
+    Verify all 9 canonical assistant tool-calling requests mandated by the MVP audit:
+    1. 'Find colleges in Mumbai.' -> search_colleges
+    2. 'What is the score of SFIT?' -> get_college_summary
+    3. 'How do students rate placements at this college?' -> get_parameter_ratings
+    4. 'Show me the hostel rating.' -> get_parameter_ratings
+    5. 'Start rating my college.' -> start_rating_session
+    6. 'What question am I answering?' -> get_rating_session
+    7. 'Save my rating as eight.' -> save_rating_answer
+    8. 'Submit my rating.' -> submit_rating_session
+    9. 'Add a college that is not listed.' -> create_unknown_college
+    """
+    queries_and_expected_tools = [
+        ("Find colleges in Mumbai.", "search_colleges"),
+        ("What is the score of SFIT?", "get_college_summary"),
+        ("How do students rate placements at this college?", "get_parameter_ratings"),
+        ("Show me the hostel rating.", "get_parameter_ratings"),
+        ("Start rating my college.", "start_rating_session"),
+        ("What question am I answering?", "get_rating_session"),
+        ("Save my rating as eight.", "save_rating_answer"),
+        ("Submit my rating.", "submit_rating_session"),
+        ("Add a college that is not listed.", "create_unknown_college"),
+    ]
+
+    dummy_session_id = str(uuid4())
+    dummy_client_uuid = str(uuid4())
+
+    for query, expected_tool in queries_and_expected_tools:
+        payload = {
+            "message": query,
+            "session_id": dummy_session_id,
+            "client_uuid": dummy_client_uuid,
+        }
+        resp = await client.post("/api/assistant/message", json=payload)
+        assert resp.status_code == 200, f"Query '{query}' failed with {resp.status_code}"
+        data = resp.json()
+        assert "reply" in data
+        assert len(data["tool_calls"]) >= 1, f"No tool calls produced for '{query}'"
+        called_tools = [tc["tool_name"] for tc in data["tool_calls"]]
+        assert expected_tool in called_tools, f"Expected '{expected_tool}' for query '{query}', but got {called_tools}"
+

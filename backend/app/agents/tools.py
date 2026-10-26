@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 import asyncpg
 from fastapi import HTTPException
 from app.schemas.college import CreateCollegeRequest
@@ -262,10 +262,17 @@ async def execute_tool(
             }
 
         elif tool_name == "get_parameter_ratings":
-            col_id_raw = arguments.get("college_id")
+            col_id_raw = arguments.get("college_id") or arguments.get("college_name_or_id")
             if not col_id_raw:
                 return {"error": "Missing college_id parameter."}
-            college_id = UUID(str(col_id_raw))
+            try:
+                college_id = UUID(str(col_id_raw))
+            except ValueError:
+                col = await get_college_by_name_or_id(conn, str(col_id_raw))
+                if not col:
+                    return {"found": False, "message": f"College '{col_id_raw}' not found."}
+                college_id = col.college_id
+
             param_keys = arguments.get("parameter_keys")
             report = await get_college_ratings(conn, college_id, parameter_keys=param_keys)
             if not report:
@@ -308,9 +315,27 @@ async def execute_tool(
             }
 
         elif tool_name == "start_rating_session":
-            col_id = UUID(str(arguments["college_id"]))
-            client_uuid = UUID(str(arguments["respondent_client_uuid"]))
-            affiliation = str(arguments["affiliation"])
+            col_id_raw = arguments.get("college_id") or arguments.get("college_name_or_id")
+            if not col_id_raw:
+                return {"error": "Missing college_id or college_name_or_id."}
+            try:
+                col_id = UUID(str(col_id_raw))
+            except ValueError:
+                col = await get_college_by_name_or_id(conn, str(col_id_raw))
+                if not col:
+                    return {"found": False, "message": f"College '{col_id_raw}' not found."}
+                col_id = col.college_id
+
+            client_uuid_raw = arguments.get("respondent_client_uuid")
+            try:
+                client_uuid = UUID(str(client_uuid_raw)) if client_uuid_raw else uuid4()
+            except ValueError:
+                client_uuid = uuid4()
+
+            affiliation = str(arguments.get("affiliation", "current_student")).strip()
+            if affiliation not in ("current_student", "alumnus"):
+                affiliation = "current_student"
+
             name = arguments.get("respondent_name")
             college_email = arguments.get("college_email") or arguments.get("respondent_college_email")
 
@@ -340,12 +365,18 @@ async def execute_tool(
         elif tool_name == "save_rating_answer":
             session_id = UUID(str(arguments["session_id"]))
             param_key = str(arguments["parameter_key"]).strip()
-            score = arguments.get("score")
+            score_raw = arguments.get("score")
+            score = None
+            if score_raw is not None:
+                try:
+                    score = int(score_raw)
+                except (ValueError, TypeError):
+                    score = None
             is_no_view = bool(arguments.get("is_no_view", False))
 
             # Look up parameter_id from key
             param_row = await conn.fetchrow(
-                "SELECT id, name FROM parameters WHERE key = $1 AND is_active = TRUE;",
+                "SELECT id, name FROM parameters WHERE (key = $1 OR LOWER(name) = LOWER($1)) AND is_active = TRUE;",
                 param_key,
             )
             if not param_row:

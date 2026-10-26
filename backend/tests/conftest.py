@@ -766,8 +766,10 @@ def mock_conn(mock_db_state: Dict[str, Any]) -> MockAsyncpgConnection:
 
 
 @pytest_asyncio.fixture
-async def client(mock_db_state: Dict[str, Any]) -> AsyncGenerator[AsyncClient, None]:
-    """HTTP client testing against FastAPI application with mocked database pool."""
+async def client(mock_db_state: Dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[AsyncClient, None]:
+    """HTTP client testing against FastAPI application with mocked database pool and deterministic mock LLM."""
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+    get_settings.cache_clear()
     pool = MockAsyncpgPool(mock_db_state)
     set_db_pool(pool)
 
@@ -785,3 +787,5 @@ async def client(mock_db_state: Dict[str, Any]) -> AsyncGenerator[AsyncClient, N
 
     set_db_pool(None)
     app.dependency_overrides.clear()
+    get_settings.cache_clear()
+

@@ -106,6 +106,16 @@ class MockLLMProvider(BaseLLMProvider):
                     pname = data.get("parameter_name", "parameter")
                     return f"Your evaluation for {pname} has been saved.", []
 
+                # Rating session progress inquiry
+                if "answers" in data or "answered_parameters_count" in data or "session_id" in data:
+                    answered = data.get("answered_parameters_count", len(data.get("answers", [])))
+                    total = data.get("total_parameters_count", 25)
+                    return (
+                        f"You are currently answering questions for your rating session ({answered} of {total} completed). "
+                        "You can speak your rating from 1 to 10 or say 'No view' for each criterion.",
+                        [],
+                    )
+
                 # Rating session submitted
                 if "new_score" in data:
                     score = data.get("new_score")
@@ -138,6 +148,126 @@ class MockLLMProvider(BaseLLMProvider):
             "walchand": "WCE",
             "wce": "WCE",
         }
+
+        # Intent: Submit Rating Session
+        if "submit" in lower_input and any(w in lower_input for w in ["rating", "session", "my rating", "review"]):
+            return (
+                "Submitting your completed rating session...",
+                [{"id": "mock_call_submit", "name": "submit_rating_session", "arguments": {"session_id": "00000000-0000-0000-0000-000000000000"}}],
+            )
+
+        # Intent: What question am I answering / Rating Session Progress
+        if any(phrase in lower_input for phrase in [
+            "what question", "which question", "am i answering", "current question",
+            "rating progress", "session progress", "how many answered"
+        ]):
+            return (
+                "Checking your current rating progress and active question...",
+                [{"id": "mock_call_get_session", "name": "get_rating_session", "arguments": {"session_id": "00000000-0000-0000-0000-000000000000"}}],
+            )
+
+        # Intent: Save Rating Answer
+        words_to_num = {
+            "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+            "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        }
+        score_val: Optional[int] = None
+        is_no_view_val = False
+
+        if "no view" in lower_input or "not applicable" in lower_input or "n/a" in lower_input:
+            is_no_view_val = True
+        else:
+            num_match = re.search(r"\b(10|[1-9]|one|two|three|four|five|six|seven|eight|nine|ten)\b", lower_input)
+            if num_match:
+                token = num_match.group(1).lower()
+                score_val = words_to_num.get(token, int(token) if token.isdigit() else None)
+
+        if ("save" in lower_input or "rate" in lower_input) and (score_val is not None or is_no_view_val):
+            # Detect parameter key from input if mentioned
+            detected_param = "food"
+            param_key_map = {
+                "food": "food", "mess": "food", "canteen": "food",
+                "ragging": "ragging", "safety": "womens_safety", "women": "womens_safety",
+                "prof": "professor_quality", "faculty": "professor_quality",
+                "toilet": "toilet_quality", "washroom": "toilet_quality",
+                "lab": "classroom_quality", "classroom": "classroom_quality",
+                "culture": "student_culture", "placement": "campus_placements", "placements": "campus_placements",
+                "hostel": "hostel_quality", "wifi": "internet", "internet": "internet",
+                "water": "drinking_water", "electric": "electricity", "transport": "transportation",
+            }
+            for k, pkey in param_key_map.items():
+                if k in lower_input:
+                    detected_param = pkey
+                    break
+
+            return (
+                f"Saving your rating evaluation as {score_val if not is_no_view_val else 'No view'}...",
+                [{
+                    "id": "mock_call_save_answer",
+                    "name": "save_rating_answer",
+                    "arguments": {
+                        "session_id": "00000000-0000-0000-0000-000000000000",
+                        "parameter_key": detected_param,
+                        "score": score_val,
+                        "is_no_view": is_no_view_val,
+                    },
+                }],
+            )
+
+        # Intent: Start Rating Session
+        if any(phrase in lower_input for phrase in ["start rating", "rate my college", "begin rating", "rate a college", "i want to rate"]):
+            target_col = "SFIT"
+            for key, code in known_colleges.items():
+                if key in lower_input:
+                    target_col = code
+                    break
+            return (
+                f"Initializing official rating session for {target_col}...",
+                [{
+                    "id": "mock_call_start_rating",
+                    "name": "start_rating_session",
+                    "arguments": {
+                        "college_id": "c0000000-0000-0000-0000-000000000001",
+                        "college_name_or_id": target_col,
+                        "affiliation": "current_student",
+                        "respondent_name": "Student Respondent",
+                    },
+                }],
+            )
+
+        # Intent: Parameter Ratings / Placement / Hostel Specific Ratings
+        if any(phrase in lower_input for phrase in [
+            "placements at", "placements for", "hostel rating", "hostel at", "how do students rate placements",
+            "show me the hostel", "hostels at", "food rating", "safety at"
+        ]):
+            target_col = "VJTI" if "vjti" in lower_input else "SFIT"
+            for key, code in known_colleges.items():
+                if key in lower_input:
+                    target_col = code
+                    break
+
+            param_filter = []
+            if "placement" in lower_input:
+                param_filter.append("campus_placements")
+            if "hostel" in lower_input:
+                param_filter.append("hostel_quality")
+            if "food" in lower_input:
+                param_filter.append("food")
+            if "safety" in lower_input:
+                param_filter.append("womens_safety")
+
+            return (
+                f"Retrieving parameter ratings for {target_col}...",
+                [{
+                    "id": "mock_call_param_ratings",
+                    "name": "get_parameter_ratings",
+                    "arguments": {
+                        "college_id": "c0000000-0000-0000-0000-000000000001" if target_col == "SFIT" else "c0000000-0000-0000-0000-000000000004",
+                        "college_name_or_id": target_col,
+                        "parameter_keys": param_filter if param_filter else None,
+                    },
+                }],
+            )
 
         # Intent 1: Search Colleges
         search_match = re.search(
@@ -205,14 +335,32 @@ class MockLLMProvider(BaseLLMProvider):
                 ],
             )
 
+        if "add a college" in lower_input or "add college" in lower_input or "not listed" in lower_input or "unlisted" in lower_input:
+            confirmed = "confirm" in lower_input or "yes" in lower_input
+            return (
+                "Please confirm the details of the unlisted college you would like to add.",
+                [{
+                    "id": "mock_call_create_college",
+                    "name": "create_unknown_college",
+                    "arguments": {
+                        "name": "Unlisted Polytechnic Institute",
+                        "city": "Mumbai",
+                        "state": "Maharashtra",
+                        "confirmed": confirmed,
+                    },
+                }],
+            )
+
         # Default conversational assistance
         return (
             "Welcome to Campus Uncut! College life, without the editing.\n\n"
             "You can ask me to:\n"
-            "• Search for any institution (e.g., 'Search for SFIT' or 'Colleges in Pune')\n"
-            "• Look up verified scores (e.g., 'What is the score of COEP?')\n"
-            "• Check parameter ratings (e.g., 'How are hostels rated at VJTI?')\n"
-            "• Explore rating criteria (e.g., 'List all 25 parameters')\n"
+            "• Search for any institution (e.g., 'Search for SFIT' or 'Colleges in Mumbai')\n"
+            "• Look up verified scores (e.g., 'What is the score of SFIT?')\n"
+            "• Check parameter ratings (e.g., 'Show me the hostel rating' or 'Placements at VJTI')\n"
+            "• Start rating your campus (e.g., 'Start rating my college')\n"
+            "• Check active rating question (e.g., 'What question am I answering?')\n"
+            "• Save or submit ratings by voice (e.g., 'Save my rating as eight' or 'Submit my rating')\n"
             "• Add an unlisted college (e.g., 'Add XYZ College in Nashik, Maharashtra')",
             [],
         )
