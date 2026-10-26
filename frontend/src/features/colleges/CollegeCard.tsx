@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { MapPin, School, GraduationCap, ShieldCheck, ArrowRight, MessageSquareQuote } from "lucide-react";
+import { MapPin, ArrowRight, MessageSquareQuote } from "lucide-react";
 import type { CollegeSummary } from "../../types/college";
-import { ScoreBadge } from "../../components/ScoreBadge";
-import { DemoBadge } from "../../components/DemoBadge";
 
 export function getCollegePhoto(college: { short_code?: string; name: string }): string {
   const code = (college.short_code || "").toUpperCase();
@@ -35,6 +33,56 @@ export function getCollegePhoto(college: { short_code?: string; name: string }):
   return "/images/colleges/default.jpg";
 }
 
+// Verified institutional facts for registered campuses
+interface CollegeMetadata {
+  description: string;
+  type: string;
+  established?: number;
+}
+
+const INSTITUTIONAL_FACTS: Record<string, CollegeMetadata> = {
+  IITB: {
+    description: "Premier national institute for technical education, innovation, and engineering research in Powai.",
+    type: "Institute of National Importance",
+    established: 1958,
+  },
+  COEP: {
+    description: "Historic public technical university on the Mula river, one of India's oldest engineering schools.",
+    type: "Autonomous State University",
+    established: 1854,
+  },
+  VJTI: {
+    description: "Pioneering state-funded technical institute in central Mumbai with extensive engineering heritage.",
+    type: "State-Funded Autonomous Institute",
+    established: 1887,
+  },
+  SFIT: {
+    description: "Private engineering institution in Borivali West affiliated with the University of Mumbai.",
+    type: "Private Engineering College",
+    established: 1999,
+  },
+  SPIT: {
+    description: "Autonomous engineering institute situated on the Munshi Nagar educational campus in Andheri.",
+    type: "Private Autonomous Institute",
+    established: 1962,
+  },
+  PICT: {
+    description: "Prominent engineering institution in Dhankawadi renowned for computer technology and software disciplines.",
+    type: "Private Engineering Institute",
+    established: 1983,
+  },
+  WCE: {
+    description: "Pioneer government-aided engineering college in Vishrambag, Sangli with historic regional prominence.",
+    type: "Government-Aided Autonomous Institute",
+    established: 1947,
+  },
+  "VIT-MUM": {
+    description: "Autonomous engineering and management campus located in Wadala East.",
+    type: "Private Autonomous Institute",
+    established: 1999,
+  },
+};
+
 interface CollegeCardProps {
   college: CollegeSummary;
   onSelect: (collegeId: string) => void;
@@ -43,143 +91,158 @@ interface CollegeCardProps {
 
 export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onRate }) => {
   const [imgSrc, setImgSrc] = useState(getCollegePhoto(college));
-  const isUnrated = college.total_submitted_sessions === 0;
+  const hasRatings = college.total_submitted_sessions > 0;
   const isDemo = Boolean(college.is_demo || college.name.toLowerCase().includes("(demo)"));
+  const facts = INSTITUTIONAL_FACTS[college.short_code?.toUpperCase() || ""];
 
   return (
-    <div className={`editorial-card bg-card overflow-hidden rounded-lg flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border ${
-      isDemo ? "border-amber-300/80 hover:border-amber-400" : "border-warm-grey hover:border-charcoal/50"
-    }`}>
+    <article
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(college.college_id);
+        }
+      }}
+      className={`editorial-card bg-card overflow-hidden rounded-md flex flex-col justify-between h-full transition-all duration-300 hover:shadow-card hover:-translate-y-0.5 group border ${
+        isDemo ? "border-amber-300/80" : "border-warm-grey hover:border-charcoal/40"
+      } focus:outline-none focus-visible:ring-2 focus-visible:ring-olive`}
+    >
       <div className="flex flex-col flex-1">
-        {/* Featured Campus Photograph Header */}
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-warm-grey-light cursor-pointer" onClick={() => onSelect(college.college_id)}>
+        {/* Campus Photograph Header (~35–40% of the card) */}
+        <div
+          className="relative aspect-[16/10] w-full overflow-hidden bg-warm-grey-light cursor-pointer select-none"
+          onClick={() => onSelect(college.college_id)}
+          title={`Explore ${college.name}`}
+        >
           <img
             src={imgSrc}
-            alt={`${college.name} campus architecture and student grounds`}
+            alt={`${college.name} campus architecture`}
             onError={() => setImgSrc("/images/colleges/default.jpg")}
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-104"
             loading="lazy"
           />
 
-          {/* Dark Scrim Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/20 to-black/30 pointer-events-none" />
+          {/* Subtle gradient only where needed for contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/65 via-transparent to-transparent pointer-events-none" />
 
-          {/* Top Row Badges (Floating on Photo) */}
-          <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
-            {/* Monogram Badge */}
-            <div className="px-2.5 py-1 rounded bg-charcoal/90 backdrop-blur-md text-paper border border-white/20 font-mono text-[11px] font-bold tracking-wider uppercase shadow-md">
+          {/* Only ONE small abbreviation label over the image */}
+          <div className="absolute top-3 left-3 pointer-events-none">
+            <span className="px-2.5 py-0.5 rounded bg-charcoal/85 backdrop-blur-sm text-paper border border-white/20 font-mono text-[11px] font-bold tracking-wider uppercase shadow-xs">
               {college.short_code}
-            </div>
-
-            {/* Score Badge */}
-            <div className="shadow-lg">
-              <ScoreBadge score={college.current_score} size="md" />
-            </div>
+            </span>
           </div>
 
-          {/* Bottom Row on Photo (Location & Verification) */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2 pointer-events-none">
-            <div className="text-white drop-shadow-md">
-              <div className="flex items-center gap-1.5 text-xs font-sans text-paper/95 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-olive-light flex-shrink-0" />
-                <span>{college.city}, {college.state}</span>
-              </div>
+          {/* Bottom overlay: City & State */}
+          <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-paper/95 text-xs font-sans font-medium pointer-events-none drop-shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-olive-light flex-shrink-0" />
+              <span className="truncate">{college.city}, {college.state}</span>
             </div>
-
-            {/* Demo or Verified Tag */}
-            {isDemo ? (
-              <DemoBadge className="shadow-md" />
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-mono tracking-wider uppercase font-bold text-white bg-olive/90 backdrop-blur-md border border-white/20 shadow-md">
-                <ShieldCheck className="w-3 h-3 text-white" />
-                Official Campus
+            {isDemo && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/90 text-charcoal font-bold uppercase tracking-wider">
+                Demo
               </span>
             )}
           </div>
         </div>
 
-        {/* Card Body Content */}
-        <div className="p-5 sm:p-6 flex flex-col justify-between flex-1">
+        {/* College Identity & Institutional Context */}
+        <div className="p-5 flex flex-col flex-1 justify-between gap-3">
           <div>
-            <h3
-              onClick={() => onSelect(college.college_id)}
-              className="font-serif text-xl sm:text-2xl font-bold text-charcoal group-hover:text-olive cursor-pointer transition-colors leading-snug line-clamp-2 h-[3.75rem] sm:h-[4.25rem] flex items-start mb-4"
-              title={college.name}
-            >
-              {college.name}
-            </h3>
+            {/* Title Container — Dedicated fixed height locks 1-line and 2-line titles to the exact same vertical slot */}
+            <div className="h-14 sm:h-16 flex flex-col justify-start">
+              <h3
+                onClick={() => onSelect(college.college_id)}
+                className="font-serif text-lg sm:text-xl font-bold text-charcoal group-hover:text-olive cursor-pointer transition-colors leading-snug line-clamp-2"
+                title={college.name}
+              >
+                {college.name}
+              </h3>
+            </div>
 
-            {/* Simulation Notice if Demo */}
-            {isDemo && (
-              <div className="mb-4 p-2.5 rounded bg-amber-50/90 border border-amber-200 text-[11px] text-amber-900 font-sans leading-relaxed">
-                <strong>Simulated Test Campus:</strong> Populated with 19 qualifying submissions to demonstrate threshold transitions (100 → 99 or 100 → 101).
-              </div>
-            )}
+            {/* Factual Institutional Description — Dedicated fixed height locks description baseline */}
+            <div className="h-10 sm:h-11 mt-2 flex flex-col justify-start">
+              {facts?.description ? (
+                <p className="text-xs text-charcoal-muted font-sans leading-relaxed line-clamp-2">
+                  {facts.description}
+                </p>
+              ) : (
+                <p className="text-xs text-charcoal-muted font-sans italic leading-relaxed line-clamp-2">
+                  Registered institution in {college.city}, {college.state}. Explore ratings and campus perspectives.
+                </p>
+              )}
+            </div>
+
+            {/* Real Institutional Fact Tags — Dedicated fixed height locks badge baseline with no line-breaking */}
+            <div className="h-7 mt-2.5 flex items-center gap-1.5 text-[11px] font-sans text-charcoal-muted overflow-hidden">
+              {facts?.established && (
+                <span className="px-2 py-0.5 rounded bg-warm-grey-light/70 border border-warm-grey/80 text-charcoal font-medium whitespace-nowrap shrink-0">
+                  Est. {facts.established}
+                </span>
+              )}
+              {facts?.type && (
+                <span
+                  className="px-2 py-0.5 rounded bg-warm-grey-light/70 border border-warm-grey/80 text-charcoal-muted truncate max-w-[210px]"
+                  title={facts.type}
+                >
+                  {facts.type}
+                </span>
+              )}
+              {!facts?.established && !facts?.type && (
+                <span className="px-2 py-0.5 rounded bg-warm-grey-light/70 border border-warm-grey/80 text-charcoal-muted truncate">
+                  {college.city}, {college.state}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Metrics / Participation Snapshot */}
-          <div className="mt-auto">
-            {isUnrated ? (
-              <div className="p-3.5 rounded bg-paper border border-warm-grey flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-olive animate-pulse" />
-                  <span className="text-xs font-semibold text-charcoal">Clean Baseline 100</span>
-                </div>
-                <span className="text-[11px] font-mono text-olive font-semibold">Awaiting First Rating</span>
+          {/* Student Perspective Summary — Quiet, Secondary, & Understated */}
+          <div className="pt-3 border-t border-warm-grey/70 mt-auto flex items-center justify-between text-xs font-sans">
+            {hasRatings ? (
+              <div className="flex items-center gap-1.5 text-charcoal font-medium">
+                <MessageSquareQuote className="w-3.5 h-3.5 text-olive flex-shrink-0" />
+                <span>
+                  <strong>{college.total_submitted_sessions}</strong> student perspective{college.total_submitted_sessions !== 1 ? "s" : ""}
+                </span>
               </div>
             ) : (
-              <div className="p-3 rounded bg-paper border border-warm-grey grid grid-cols-3 gap-2 text-center text-xs font-sans">
-                <div>
-                  <div className="font-bold text-charcoal text-base font-serif">
-                    {college.total_submitted_sessions}
-                  </div>
-                  <div className="text-[10px] text-charcoal-muted uppercase font-mono tracking-wider">
-                    Total Reviews
-                  </div>
-                </div>
-                <div title="Current student respondents">
-                  <div className="font-bold text-charcoal text-base font-serif flex items-center justify-center gap-1">
-                    <School className="w-3.5 h-3.5 text-olive" />
-                    <span>{college.current_student_submissions}</span>
-                  </div>
-                  <div className="text-[10px] text-charcoal-muted uppercase font-mono tracking-wider">
-                    Students
-                  </div>
-                </div>
-                <div title="Alumni respondents">
-                  <div className="font-bold text-charcoal text-base font-serif flex items-center justify-center gap-1">
-                    <GraduationCap className="w-3.5 h-3.5 text-charcoal-muted" />
-                    <span>{college.alumni_submissions}</span>
-                  </div>
-                  <div className="text-[10px] text-charcoal-muted uppercase font-mono tracking-wider">
-                    Alumni
-                  </div>
-                </div>
-              </div>
+              <span className="text-charcoal-muted italic text-[11px]">
+                No student ratings yet
+              </span>
             )}
+
+            {/* Score as secondary, subtle metadata */}
+            <span
+              className="text-[11px] font-mono text-charcoal-muted"
+              title="Campus Uncut benchmark score (100 baseline)"
+            >
+              Score: {college.current_score}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons Footer */}
-      <div className="p-5 sm:p-6 pt-0 border-t border-warm-grey/60 mt-auto">
-        <div className="flex items-center gap-2 pt-4">
+      {/* Actions Footer — Restrained, Aligned, & Compact */}
+      <div className="p-5 pt-0 border-t border-warm-grey/50">
+        <div className="flex items-center gap-2 pt-3">
           <button
             onClick={() => onSelect(college.college_id)}
-            className="flex-1 btn-secondary text-xs py-2.5 px-3 font-semibold flex items-center justify-center gap-1.5 group/btn"
+            className="flex-1 btn-primary text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 group/btn"
+            title={`Explore ${college.name}`}
           >
-            <span>View Ratings</span>
-            <ArrowRight className="w-3.5 h-3.5 text-olive transition-transform group-hover/btn:translate-x-0.5" />
+            <span>Explore college</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 text-paper" />
           </button>
           <button
             onClick={() => onRate(college.college_id)}
-            className="flex-1 btn-primary text-xs py-2.5 px-3 font-semibold flex items-center justify-center gap-1.5"
+            className="btn-secondary text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 whitespace-nowrap text-charcoal hover:border-charcoal hover:bg-card"
+            title={`Rate ${college.name}`}
           >
-            <MessageSquareQuote className="w-3.5 h-3.5 text-olive-light" />
-            <span>Rate Campus</span>
+            <span>{hasRatings ? "Rate college" : "Write a review"}</span>
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 };

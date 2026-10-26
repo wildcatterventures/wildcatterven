@@ -143,8 +143,30 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
         </div>
 
         {error && (
-          <div className="mb-6 p-3.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs">
-            {error}
+          <div className="mb-6 p-3.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex-1">
+              <p className="font-semibold">{error}</p>
+              {error.includes("Cannot change declared college") && (
+                <p className="mt-1 text-[11px] text-rose-700 leading-relaxed">
+                  Campus Uncut locks reviewer profiles to their declared institution once an official rating is submitted to prevent cross-campus score brigading. If you are testing as a different student, click the reset button to generate a new reviewer profile.
+                </p>
+              )}
+            </div>
+            {error.includes("Cannot change declared college") && (
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem("campus_uncut_client_uuid");
+                  localStorage.removeItem("campus_uncut_declared_college_id");
+                  localStorage.removeItem("campus_uncut_respondent_id");
+                  localStorage.removeItem("campus_uncut_active_session_id");
+                  window.location.reload();
+                }}
+                className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded font-medium text-xs whitespace-nowrap transition-colors shadow-sm self-start sm:self-auto"
+              >
+                Reset Reviewer Profile
+              </button>
+            )}
           </div>
         )}
 

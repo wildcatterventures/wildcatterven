@@ -18,6 +18,7 @@ import type {
   AssistantMessageRequest,
   AssistantMessageResponse,
 } from "../types/assistant";
+import { getClientUUID } from "./storage";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
@@ -39,8 +40,18 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  let visitorId: string | undefined;
+  try {
+    if (typeof window !== "undefined") {
+      visitorId = getClientUUID();
+    }
+  } catch {
+    // ignore
+  }
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(visitorId ? { "X-Visitor-Session-ID": visitorId } : {}),
     ...(options.headers as Record<string, string>),
   };
 

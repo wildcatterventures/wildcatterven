@@ -50,7 +50,7 @@ export function parseSpokenRating(text: string): ParsedVoiceRating {
   const clean = text.trim().toLowerCase();
 
   // Navigation commands
-  if (clean.includes("previous") || clean.includes("go back") || clean === "back") {
+  if (clean.includes("previous") || clean.includes("go back") || clean === "back" || clean === "last question") {
     return { valid: true, score: null, isNoView: false, isNavigation: "previous", rawText: text };
   }
   if (clean.includes("repeat") || clean.includes("say again") || clean.includes("what question")) {
@@ -59,12 +59,16 @@ export function parseSpokenRating(text: string): ParsedVoiceRating {
   if (clean === "review" || clean.includes("review all") || clean === "finish") {
     return { valid: true, score: null, isNoView: false, isNavigation: "review", rawText: text };
   }
-  if (clean === "next" || clean === "skip") {
+  if (clean === "next question" || clean === "go forward") {
     return { valid: true, score: null, isNoView: false, isNavigation: "next", rawText: text };
   }
 
-  // No View expressions
+  // Explicit No View / Skip / Pass expressions
   if (
+    clean === "pass" ||
+    clean.includes("pass") ||
+    clean === "skip" ||
+    clean.includes("skip") ||
     clean.includes("no view") ||
     clean.includes("not applicable") ||
     clean === "n/a" ||
@@ -72,7 +76,9 @@ export function parseSpokenRating(text: string): ParsedVoiceRating {
     clean.includes("no opinion") ||
     clean.includes("haven't used") ||
     clean.includes("havent used") ||
-    clean.includes("never used")
+    clean.includes("never used") ||
+    clean.includes("don't know") ||
+    clean.includes("dont know")
   ) {
     return { valid: true, score: null, isNoView: true, rawText: text };
   }
@@ -99,7 +105,7 @@ export function parseSpokenRating(text: string): ParsedVoiceRating {
       score: null,
       isNoView: false,
       rawText: text,
-      clarification: "Scores must be between 1 and 10, or say 'No view'.",
+      clarification: "Scores must be between 1 and 10, or say 'No view', 'Pass', or 'Skip'.",
     };
   }
 
@@ -123,7 +129,7 @@ export function parseSpokenRating(text: string): ParsedVoiceRating {
     score: null,
     isNoView: false,
     rawText: text,
-    clarification: `Heard "${text}". Could not recognize a rating between 1 and 10 or 'No view'.`,
+    clarification: `Heard "${text}". Could not recognize a rating between 1 and 10, or 'No view'.`,
   };
 }
 
