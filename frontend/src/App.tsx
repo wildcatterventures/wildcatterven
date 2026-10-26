@@ -49,12 +49,41 @@ export const App: React.FC = () => {
     fetchPreview();
   }, []);
 
+  // Sync with browser URL pathname on mount and popstate
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
+      if (path.startsWith("/colleges/") && path.length > 10) {
+        const id = path.replace("/colleges/", "").trim();
+        if (id) {
+          setSelectedCollegeId(id);
+          setCurrentView("college_detail");
+        }
+      } else if (path === "/colleges") {
+        setCurrentView("colleges");
+      } else if (path === "/rate") {
+        setCurrentView("rate");
+      } else if (path === "/" || path === "") {
+        setCurrentView("home");
+      }
+    };
+
+    handleLocationChange();
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
+
   const handleNavigate = (view: string, data?: any) => {
-    if (view === "colleges") {
+    if (view === "home") {
+      window.history.pushState({}, "", "/");
+    } else if (view === "colleges") {
       setSearchQuery(data?.query || "");
-    }
-    if (view === "college_detail" && data?.collegeId) {
+      window.history.pushState({}, "", "/colleges");
+    } else if (view === "college_detail" && data?.collegeId) {
       setSelectedCollegeId(data.collegeId);
+      window.history.pushState({}, "", `/colleges/${data.collegeId}`);
+    } else if (view === "rate") {
+      window.history.pushState({}, "", "/rate");
     }
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -66,7 +95,7 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleOpenAssistantWithQuery = (sampleQuery: string) => {
+  const handleOpenAssistantWithQuery = (sampleQuery?: string) => {
     setAssistantInitialQuery(sampleQuery);
     setIsAssistantOpen(true);
   };
@@ -156,6 +185,7 @@ export const App: React.FC = () => {
               setSelectedCollegeId(id);
               setCurrentView("rate");
             }}
+            onAskAssistant={handleOpenAssistantWithQuery}
           />
         )}
 
