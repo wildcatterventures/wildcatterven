@@ -142,9 +142,30 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           </h1>
 
           {/* Concise Supporting Text */}
-          <p className="text-xs sm:text-base text-charcoal-muted max-w-xl mb-4 sm:mb-6 leading-relaxed font-sans">
+          <p className="text-xs sm:text-base text-charcoal-muted max-w-xl mb-3 sm:mb-5 leading-relaxed font-sans">
             Surface the lived experiences behind prospectus claims. Unedited ratings across food quality, hostels, faculty accessibility, ragging prevention, and placements—governed by deterministic 20-submission blocks.
           </p>
+
+          {/* Mobile Editorial Campus Photograph Frame (Visible on Mobile Only) */}
+          <div className="md:hidden mb-4 sm:mb-6 rounded-lg overflow-hidden border border-warm-grey shadow-card relative">
+            <div className="aspect-[16/10] w-full overflow-hidden relative">
+              <img
+                src="/images/hero_quad.jpg"
+                alt="Indian university campus quad with students gathered on stone steps in candid discussion"
+                className="w-full h-full object-cover object-[72%_55%]"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/65 via-charcoal/10 to-transparent pointer-events-none" />
+              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-paper text-[10px] font-mono pointer-events-none">
+                <span className="font-semibold tracking-wider uppercase bg-charcoal/80 px-2 py-0.5 rounded border border-white/20">
+                  Campus Quad • Candid Life
+                </span>
+                <span className="text-paper/85 tracking-wide">
+                  Unedited Reality
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* Micro-label above search for focal clarity */}
           <label htmlFor="hero-search-input" className="block text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal/70 mb-1.5 font-medium">
