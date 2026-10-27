@@ -50,10 +50,19 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        """Return list of allowed CORS origins, stripped of whitespace."""
-        if not self.CORS_ORIGINS:
+        """Return list of allowed CORS origins, stripped of whitespace and trailing slashes."""
+        raw = self.CORS_ORIGINS or ""
+        origins = [
+            origin.strip().rstrip("/")
+            for origin in raw.split(",")
+            if origin.strip()
+        ]
+        if self.APP_ENV == "production":
+            # Forbid unrestricted '*' in production
+            return [origin for origin in origins if origin != "*"]
+        if not origins:
             return ["*"]
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        return origins
 
     @property
     def api_key(self) -> Optional[str]:

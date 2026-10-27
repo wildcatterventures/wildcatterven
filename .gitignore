@@ -28,10 +28,20 @@ env/
 venv/
 ENV/
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.env
+backend/.env*
+frontend/.env*
+!backend/.env.example
+!frontend/.env.example
+*.pem
+*.key
+*credential*
+*service_role*
+*service-role*
 
 # Node
 node_modules/

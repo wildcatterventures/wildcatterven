@@ -20,7 +20,18 @@ import type {
 } from "../types/assistant";
 import { getClientUUID } from "./storage";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+function getApiBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  // Ensure production builds never call localhost or 127.0.0.1
+  if (import.meta.env.PROD) {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)) {
+      return "";
+    }
+  }
+  return envUrl.replace(/\/+$/, "");
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;
@@ -39,7 +50,16 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const resolvedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_BASE_URL}${resolvedPath}`;
+
+  if (import.meta.env.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+    throw new ApiError(
+      500,
+      "Production build cannot call localhost. Ensure VITE_API_BASE_URL is configured with your production backend URL."
+    );
+  }
+
   let visitorId: string | undefined;
   try {
     if (typeof window !== "undefined") {
