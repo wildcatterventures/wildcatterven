@@ -63,31 +63,31 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
 
   return (
     <section className="mb-10">
-      <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
+      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-4 mb-5 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider font-bold ${confidenceBadge.color}`}>
                 {confidenceBadge.label} (n={totalSessions} session{totalSessions !== 1 ? "s" : ""})
               </span>
-              <span className="text-[11px] font-mono text-charcoal-muted">
+              <span className="text-[10px] sm:text-[11px] font-mono text-charcoal-muted">
                 Student Telemetry
               </span>
             </div>
-            <h2 className="font-serif text-2xl font-bold text-charcoal mt-1">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mt-1">
               What Students Appreciate — And What to Look Into
             </h2>
           </div>
 
-          <span className="text-xs text-charcoal-muted font-sans sm:text-right max-w-xs">
+          <span className="text-[11px] sm:text-xs text-charcoal-muted font-sans sm:text-right max-w-xs">
             Student-reported perspectives. Never treated as independently established facts.
           </span>
         </div>
 
         {/* Cautious Editorial Notice for Small Sample Sizes (< 5 sessions) */}
         {isEarlySignal && (
-          <div className="mb-6 p-4 rounded-md bg-amber-50/70 border border-amber-200/90 text-xs font-sans text-amber-950 flex items-start gap-3">
+          <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-md bg-amber-50/70 border border-amber-200/90 text-xs font-sans text-amber-950 flex items-start gap-2.5 sm:gap-3">
             <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <strong className="font-semibold text-amber-950">
@@ -100,10 +100,10 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
         )}
 
         {/* Two-Column Comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {/* Favorable Signal */}
           {bestParam && (
-            <div className="p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
+            <div className="p-4 sm:p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -115,34 +115,34 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
                   </span>
                 </div>
 
-                <h3 className="font-serif text-lg font-bold text-charcoal leading-snug">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-charcoal leading-snug">
                   {bestParam.parameter_name}
                 </h3>
                 <span className="text-[10px] font-mono text-olive uppercase tracking-wider block mt-0.5">
                   Category: {bestParam.parameter_category}
                 </span>
 
-                <p className="text-xs text-charcoal-muted font-sans mt-3 leading-relaxed">
+                <p className="text-xs text-charcoal-muted font-sans mt-2.5 sm:mt-3 leading-relaxed">
                   {isEarlySignal
                     ? `Initial submission recorded favorable marks (${bestParam.average_score?.toFixed(1)}/10) for ${bestParam.parameter_name.toLowerCase()}. Additional student responses will clarify if this represents broad campus sentiment.`
                     : `Students rate ${bestParam.parameter_name.toLowerCase()} favorably at an average of ${bestParam.average_score?.toFixed(1)}/10 across ${bestParam.numeric_response_count} verified evaluations.`}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-warm-grey/60 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-warm-grey/60 flex flex-col xs:flex-row xs:items-center justify-between gap-2">
                 <div className="flex items-baseline gap-1">
-                  <span className="font-serif text-2xl font-bold text-charcoal">
+                  <span className="font-serif text-xl sm:text-2xl font-bold text-charcoal">
                     {bestParam.average_score?.toFixed(1)}
                   </span>
                   <span className="text-xs font-mono text-charcoal-muted">/ 10</span>
                   <span className="text-[11px] text-charcoal-muted font-sans ml-2">
-                    ({bestParam.numeric_response_count} numeric vote{bestParam.numeric_response_count !== 1 ? "s" : ""})
+                    ({bestParam.numeric_response_count} vote{bestParam.numeric_response_count !== 1 ? "s" : ""})
                   </span>
                 </div>
 
                 <button
                   onClick={() => onSelectParameter(bestParam.parameter_key)}
-                  className="text-xs font-medium text-olive hover:text-charcoal hover:underline inline-flex items-center gap-1"
+                  className="text-xs font-medium text-olive hover:text-charcoal hover:underline inline-flex items-center gap-1 self-start xs:self-auto min-h-[32px]"
                 >
                   <span>Inspect evidence</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -153,7 +153,7 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
 
           {/* Area to Investigate */}
           {worstParam && (
-            <div className="p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
+            <div className="p-4 sm:p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
@@ -165,34 +165,34 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
                   </span>
                 </div>
 
-                <h3 className="font-serif text-lg font-bold text-charcoal leading-snug">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-charcoal leading-snug">
                   {worstParam.parameter_name}
                 </h3>
                 <span className="text-[10px] font-mono text-olive uppercase tracking-wider block mt-0.5">
                   Category: {worstParam.parameter_category}
                 </span>
 
-                <p className="text-xs text-charcoal-muted font-sans mt-3 leading-relaxed">
+                <p className="text-xs text-charcoal-muted font-sans mt-2.5 sm:mt-3 leading-relaxed">
                   {isEarlySignal
                     ? `Initial respondent noted comparatively lower satisfaction (${worstParam.average_score?.toFixed(1)}/10) for ${worstParam.parameter_name.toLowerCase()}. Prospective students should inquire further with current students.`
                     : `Student evaluations reflect comparatively lower satisfaction (${worstParam.average_score?.toFixed(1)}/10) for ${worstParam.parameter_name.toLowerCase()}. Investigating this area during campus visits is recommended.`}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-warm-grey/60 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-warm-grey/60 flex flex-col xs:flex-row xs:items-center justify-between gap-2">
                 <div className="flex items-baseline gap-1">
-                  <span className="font-serif text-2xl font-bold text-charcoal">
+                  <span className="font-serif text-xl sm:text-2xl font-bold text-charcoal">
                     {worstParam.average_score?.toFixed(1)}
                   </span>
                   <span className="text-xs font-mono text-charcoal-muted">/ 10</span>
                   <span className="text-[11px] text-charcoal-muted font-sans ml-2">
-                    ({worstParam.numeric_response_count} numeric vote{worstParam.numeric_response_count !== 1 ? "s" : ""})
+                    ({worstParam.numeric_response_count} vote{worstParam.numeric_response_count !== 1 ? "s" : ""})
                   </span>
                 </div>
 
                 <button
                   onClick={() => onSelectParameter(worstParam.parameter_key)}
-                  className="text-xs font-medium text-olive hover:text-charcoal hover:underline inline-flex items-center gap-1"
+                  className="text-xs font-medium text-olive hover:text-charcoal hover:underline inline-flex items-center gap-1 self-start xs:self-auto min-h-[32px]"
                 >
                   <span>Inspect evidence</span>
                   <ChevronRight className="w-3.5 h-3.5" />

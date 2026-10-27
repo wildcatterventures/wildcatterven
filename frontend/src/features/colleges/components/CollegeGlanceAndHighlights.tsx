@@ -15,16 +15,18 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
   return (
     <section className="mb-10 space-y-6">
       {/* 1. College at a Glance (Verified Institutional Facts) */}
-      <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
-        <div className="flex items-center gap-2 mb-4 border-b border-warm-grey/70 pb-3">
-          <Landmark className="w-4 h-4 text-olive" />
-          <h2 className="font-serif text-xl font-bold text-charcoal">College at a Glance</h2>
-          <span className="text-[11px] font-mono uppercase tracking-wider text-charcoal-muted ml-auto">
+      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4 border-b border-warm-grey/70 pb-3">
+          <div className="flex items-center gap-2">
+            <Landmark className="w-4 h-4 text-olive flex-shrink-0" />
+            <h2 className="font-serif text-lg sm:text-xl font-bold text-charcoal">College at a Glance</h2>
+          </div>
+          <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
             Verified Institutional Facts
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
           {/* Established */}
           <div className="p-3 rounded bg-paper/70 border border-warm-grey/70">
             <span className="text-[10px] font-mono uppercase tracking-wider text-charcoal-muted block">
@@ -107,7 +109,7 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
 
       {/* 2. What Makes This Campus Different (Distinctive Signature Features) */}
       {dossier?.distinctiveFeatures && dossier.distinctiveFeatures.length > 0 && (
-        <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
+        <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-olive" />
             <h2 className="font-serif text-xl font-bold text-charcoal">

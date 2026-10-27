@@ -8,14 +8,14 @@ interface HowItWorksProps {
 
 export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => {
   return (
-    <section className="py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-warm-grey">
+    <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-warm-grey">
       {/* Editorial Section Masthead */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-warm-grey gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 pb-4 border-b border-warm-grey gap-4">
         <div>
           <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
             The Scoring Architecture
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-charcoal mt-1">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mt-1">
             How Campus Uncut Works
           </h2>
           <p className="text-xs sm:text-sm text-charcoal-muted mt-1 max-w-2xl font-sans">
@@ -23,11 +23,11 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <button onClick={onExplore} className="btn-secondary text-xs py-2 px-3.5">
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 self-stretch md:self-auto">
+          <button onClick={onExplore} className="btn-secondary min-h-[40px] text-xs py-2 px-3.5 flex items-center justify-center">
             <span>Explore Directory</span>
           </button>
-          <button onClick={onRate} className="btn-primary text-xs py-2 px-4">
+          <button onClick={onRate} className="btn-primary min-h-[40px] text-xs py-2 px-4 flex items-center justify-center gap-1.5">
             <span>Rate Your Campus</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -35,9 +35,9 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
       </div>
 
       {/* 4 Architectural Infographic Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Step 1 */}
-        <div className="editorial-card p-6 bg-card flex flex-col justify-between border-t-2 border-t-charcoal">
+        <div className="editorial-card p-4 sm:p-6 bg-card flex flex-col justify-between border-t-2 border-t-charcoal">
           <div>
             <div className="w-10 h-10 rounded bg-warm-grey-light flex items-center justify-center text-charcoal mb-4">
               <ListFilter className="w-5 h-5 text-olive" />
@@ -58,7 +58,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
         </div>
 
         {/* Step 2 */}
-        <div className="editorial-card p-6 bg-card flex flex-col justify-between border-t-2 border-t-olive">
+        <div className="editorial-card p-4 sm:p-6 bg-card flex flex-col justify-between border-t-2 border-t-olive">
           <div>
             <div className="w-10 h-10 rounded bg-olive-light flex items-center justify-center text-olive mb-4">
               <ShieldCheck className="w-5 h-5 text-olive" />
@@ -79,7 +79,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
         </div>
 
         {/* Step 3 */}
-        <div className="editorial-card p-6 bg-card flex flex-col justify-between border-t-2 border-t-terracotta">
+        <div className="editorial-card p-4 sm:p-6 bg-card flex flex-col justify-between border-t-2 border-t-terracotta">
           <div>
             <div className="w-10 h-10 rounded bg-terracotta-light flex items-center justify-center text-terracotta mb-4">
               <Layers className="w-5 h-5 text-terracotta" />
@@ -100,7 +100,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
         </div>
 
         {/* Step 4 */}
-        <div className="editorial-card p-6 bg-card flex flex-col justify-between border-t-2 border-t-charcoal">
+        <div className="editorial-card p-4 sm:p-6 bg-card flex flex-col justify-between border-t-2 border-t-charcoal">
           <div>
             <div className="w-10 h-10 rounded bg-warm-grey-light flex items-center justify-center text-charcoal mb-4">
               <EyeOff className="w-5 h-5 text-charcoal-muted" />

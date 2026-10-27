@@ -24,6 +24,9 @@ export default {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
         mono: ["JetBrains Mono", "Courier New", "monospace"],
       },
+      screens: {
+        xs: "480px",
+      },
       boxShadow: {
         subtle: "0 1px 3px rgba(37, 39, 36, 0.05), 0 1px 2px rgba(37, 39, 36, 0.03)",
         card: "0 2px 8px -2px rgba(37, 39, 36, 0.06), 0 1px 4px -1px rgba(37, 39, 36, 0.04)",

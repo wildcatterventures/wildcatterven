@@ -19,9 +19,9 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
   onRateCollege,
 }) => {
   return (
-    <section className="py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Masthead */}
-      <div className="flex flex-col sm:flex-row items-baseline justify-between mb-8 border-b border-warm-grey pb-4 gap-2">
+      <div className="flex flex-col sm:flex-row items-baseline justify-between mb-6 sm:mb-8 border-b border-warm-grey pb-4 gap-2">
         <div>
           <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
             Institutional Registry
@@ -36,7 +36,7 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
 
         <button
           onClick={onExploreAll}
-          className="text-xs font-semibold text-olive hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
+          className="text-xs font-semibold text-olive hover:underline inline-flex items-center gap-1 self-start sm:self-auto min-h-[36px]"
         >
           <span>View all institutions ({colleges.length})</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -44,9 +44,9 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="editorial-card p-6 bg-card animate-pulse space-y-4">
+            <div key={i} className="editorial-card p-5 sm:p-6 bg-card animate-pulse space-y-4">
               <div className="h-44 bg-warm-grey-light rounded w-full" />
               <div className="h-6 bg-warm-grey rounded w-3/4" />
               <div className="h-4 bg-warm-grey rounded w-1/2" />
@@ -54,7 +54,7 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10 sm:mb-14">
           {colleges.slice(0, 6).map((college) => (
             <CollegeCard
               key={college.college_id}
@@ -68,7 +68,7 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
 
       {/* Editorial Photographic Inset Banner */}
       <div className="editorial-card overflow-hidden bg-card border-warm-grey grid grid-cols-1 md:grid-cols-12 items-center shadow-card">
-        <div className="md:col-span-5 h-64 md:h-full relative overflow-hidden">
+        <div className="md:col-span-5 h-52 sm:h-64 md:h-full relative overflow-hidden">
           <img
             src="/images/library_study.jpg"
             alt="Students reading and collaborating in an open university library hall"
@@ -76,18 +76,18 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card/60 hidden md:block" />
         </div>
-        <div className="md:col-span-7 p-6 sm:p-10">
+        <div className="md:col-span-7 p-5 sm:p-8 md:p-10">
           <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
             Institutional Accountability
           </span>
-          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal mt-1 mb-3">
+          <h3 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-charcoal mt-1 mb-2.5 sm:mb-3">
             Real Experiences Cannot Be Faked.
           </h3>
-          <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed font-sans mb-6">
+          <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed font-sans mb-5 sm:mb-6">
             Unlike commercial ranking lists influenced by advertising budgets, Campus Uncut ratings require comprehensive 25-parameter evaluation from authenticated student profiles.
           </p>
           <div className="flex items-center gap-3">
-            <button onClick={onExploreAll} className="btn-primary text-xs py-2.5 px-6 font-semibold">
+            <button onClick={onExploreAll} className="btn-primary min-h-[44px] text-xs py-2.5 px-6 font-semibold flex items-center justify-center">
               Explore All Institutions
             </button>
           </div>

@@ -478,24 +478,24 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   };
 
   return (
-    <div className="py-8 px-4 sm:px-6 max-w-3xl mx-auto font-sans">
+    <div className="py-5 sm:py-8 px-3.5 sm:px-6 max-w-3xl mx-auto font-sans">
       {/* Top Bar: Progress and Exit */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
         <button
           onClick={onExit}
-          className="text-xs font-semibold text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1.5"
+          className="text-xs font-semibold text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1.5 min-h-[36px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Session</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-between xs:justify-end">
           {isSpeechRecognitionSupported() && (
             <button
               type="button"
               onClick={toggleVoiceMode}
               title={isVoiceMode ? "Disable Voice Guidance" : "Enable Voice Guided Rating"}
-              className={`text-xs py-1.5 px-3 rounded flex items-center gap-1.5 font-medium border transition-colors ${
+              className={`text-xs py-1.5 px-3 min-h-[36px] rounded flex items-center gap-1.5 font-medium border transition-colors ${
                 isVoiceMode
                   ? "bg-olive text-paper border-olive shadow-sm"
                   : "bg-paper text-charcoal-muted hover:text-charcoal border-warm-grey hover:border-olive"
@@ -506,24 +506,24 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
               ) : (
                 <MicOff className="w-3.5 h-3.5" />
               )}
-              <span>{isVoiceMode ? "Voice Guidance Active" : "Voice Guidance"}</span>
+              <span>{isVoiceMode ? "Voice Active" : "Voice Mode"}</span>
             </button>
           )}
 
           <button
             onClick={() => setViewState("review")}
-            className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-medium"
+            className="btn-secondary text-xs py-1.5 px-3 min-h-[36px] flex items-center gap-1.5 font-medium"
           >
             <ListChecks className="w-4 h-4 text-olive" />
-            <span>Review All ({answeredCount}/25)</span>
+            <span>Review ({answeredCount}/25)</span>
           </button>
         </div>
       </div>
 
       {/* Progress Indicator Bar */}
-      <div className="mb-8 p-4 rounded bg-card border border-warm-grey shadow-subtle">
-        <div className="flex items-center justify-between text-xs text-charcoal-muted mb-2 font-mono">
-          <div className="flex items-center gap-2">
+      <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded bg-card border border-warm-grey shadow-subtle">
+        <div className="flex flex-col xs:flex-row xs:items-center justify-between text-xs text-charcoal-muted mb-2 font-mono gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-charcoal">
               Question #{currentIndex + 1}
             </span>
@@ -545,7 +545,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         </div>
 
         {/* 25 Question Mini Jump Pills */}
-        <div className="mt-4 pt-3 border-t border-warm-grey flex items-center gap-1 flex-wrap justify-between">
+        <div className="mt-3.5 pt-3 border-t border-warm-grey flex items-center gap-1.5 flex-wrap justify-center xs:justify-start">
           {parameters.map((p, idx) => {
             const isAns = Boolean(answers[p.parameter_id]);
             const isCurr = idx === currentIndex;
@@ -554,7 +554,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                 key={p.parameter_id}
                 onClick={() => setCurrentIndex(idx)}
                 title={`Jump to #${idx + 1}: ${p.parameter_name}`}
-                className={`w-6 h-6 rounded text-[10px] font-mono font-bold transition-all ${
+                className={`w-7 h-7 sm:w-6 sm:h-6 rounded text-[11px] sm:text-[10px] font-mono font-bold transition-all flex items-center justify-center ${
                   isCurr
                     ? "bg-charcoal text-paper ring-2 ring-olive"
                     : isAns
@@ -573,15 +573,13 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         <div className="mb-6 p-3 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs">
           {error}
         </div>
-      )}
-
-      {/* Active Question Card */}
+      )}      {/* Active Question Card */}
       {currentParam && (
-        <div className="editorial-card p-6 sm:p-10 bg-card mb-8 shadow-card border-warm-grey">
+        <div className="editorial-card p-4 sm:p-8 md:p-10 bg-card mb-6 sm:mb-8 shadow-card border-warm-grey">
           {/* Category Header */}
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-warm-grey">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between pb-3 sm:pb-4 mb-5 sm:mb-6 border-b border-warm-grey gap-1.5">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded bg-olive-light flex items-center justify-center">
+              <div className="w-7 h-7 rounded bg-olive-light flex items-center justify-center flex-shrink-0">
                 {getCategoryIcon(currentParam.parameter_category)}
               </div>
               <span className="font-mono text-xs text-olive uppercase tracking-wider font-bold">
@@ -595,7 +593,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
           {/* Voice Guidance Interactive Card */}
           {isVoiceMode && (
-            <div className="mb-6 p-4 rounded-lg bg-olive-light/60 border border-olive/30 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+            <div className="mb-6 p-3.5 sm:p-4 rounded-lg bg-olive-light/60 border border-olive/30 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
@@ -635,7 +633,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                   type="button"
                   onClick={announceCurrentQuestion}
                   title="Repeat question audio"
-                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal hover:border-olive flex items-center gap-1"
+                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal hover:border-olive flex items-center gap-1 min-h-[32px]"
                 >
                   <RotateCcw className="w-3 h-3 text-olive" />
                   <span>Repeat</span>
@@ -643,7 +641,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                 <button
                   type="button"
                   onClick={toggleVoiceMode}
-                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal hover:border-rose-400"
+                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal hover:border-rose-400 min-h-[32px]"
                 >
                   Turn Off
                 </button>
@@ -668,11 +666,11 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           <span className="text-xs font-mono text-charcoal-muted uppercase">
             Parameter #{currentParam.display_order} of 25
           </span>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal mt-1 mb-4 leading-snug">
+          <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-charcoal mt-1 mb-3 sm:mb-4 leading-snug">
             {currentParam.parameter_name}
           </h2>
 
-          <p className="text-xs sm:text-sm text-charcoal-muted mb-8 leading-relaxed font-sans">
+          <p className="text-xs sm:text-sm text-charcoal-muted mb-6 sm:mb-8 leading-relaxed font-sans">
             Please provide your candid, unedited assessment for <strong>{college.name}</strong> based on your firsthand observations as a student or alumnus.
           </p>
 
@@ -685,12 +683,12 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           />
 
           {/* Previous / Next Stepper */}
-          <div className="mt-8 pt-6 border-t border-warm-grey flex items-center justify-between gap-4">
+          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-warm-grey flex items-center justify-between gap-3">
             <button
               type="button"
               disabled={currentIndex === 0}
               onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-              className="btn-secondary text-xs py-2 px-4 disabled:opacity-30"
+              className="btn-secondary min-h-[44px] text-xs py-2 px-4 disabled:opacity-30 flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Previous</span>
@@ -700,7 +698,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
               <button
                 type="button"
                 onClick={() => setCurrentIndex((prev) => Math.min(prev + 1, parameters.length - 1))}
-                className="btn-secondary text-xs py-2 px-4"
+                className="btn-secondary min-h-[44px] text-xs py-2 px-5 flex items-center gap-1.5 font-medium"
               >
                 <span>Next</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -709,7 +707,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
               <button
                 type="button"
                 onClick={() => setViewState("review")}
-                className="btn-primary text-xs py-2 px-5 font-semibold"
+                className="btn-primary min-h-[44px] text-xs py-2 px-5 font-semibold flex items-center gap-1.5"
               >
                 <span>Proceed to Review</span>
                 <ListChecks className="w-4 h-4" />

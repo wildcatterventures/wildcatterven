@@ -135,7 +135,7 @@ export const App: React.FC = () => {
       />
 
       {/* 3. Main Views */}
-      <main className="flex-1">
+      <main className="flex-1 min-w-0">
         {/* HOMEPAGE VIEW */}
         {currentView === "home" && (
           <>

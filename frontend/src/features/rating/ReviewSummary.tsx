@@ -55,11 +55,11 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
   const isComplete = unansweredCount === 0;
 
   return (
-    <div className="py-8 px-4 sm:px-6 max-w-4xl mx-auto font-sans">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="py-6 sm:py-8 px-3.5 sm:px-6 max-w-4xl mx-auto font-sans">
+      <div className="mb-4 sm:mb-6 flex items-center justify-between">
         <button
           onClick={onBackToWizard}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-charcoal"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-charcoal min-h-[36px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Rating Wizard</span>
@@ -70,12 +70,12 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
         </span>
       </div>
 
-      <div className="editorial-card p-6 sm:p-8 bg-card mb-8">
-        <div className="border-b border-warm-grey pb-6 mb-6">
-          <h2 className="font-serif text-3xl font-bold text-charcoal">
+      <div className="editorial-card p-4 sm:p-8 bg-card mb-8">
+        <div className="border-b border-warm-grey pb-4 sm:pb-6 mb-4 sm:mb-6">
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal">
             Review Your Responses
           </h2>
-          <p className="text-xs sm:text-sm text-charcoal-muted mt-1">
+          <p className="text-xs sm:text-sm text-charcoal-muted mt-1 leading-relaxed">
             Rating for <strong>{collegeName}</strong>. Check your responses before final submission. After submission, answers are permanently recorded in the official score engine.
           </p>
         </div>
@@ -88,9 +88,9 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
         )}
 
         {/* Calculation Preview Box */}
-        <div className="p-4 rounded border border-warm-grey bg-warm-grey-light mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
-            <div className="font-serif text-2xl font-bold text-charcoal">
+        <div className="p-3 sm:p-4 rounded border border-warm-grey bg-warm-grey-light mb-6 sm:mb-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-center">
+          <div className="p-2 sm:p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className="font-serif text-xl sm:text-2xl font-bold text-charcoal">
               {mean !== null ? mean.toFixed(2) : "—"}
             </div>
             <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
@@ -98,8 +98,8 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
             </div>
           </div>
 
-          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
-            <div className={`font-serif text-2xl font-bold capitalize ${
+          <div className="p-2 sm:p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className={`font-serif text-xl sm:text-2xl font-bold capitalize ${
               category === "high" ? "text-emerald-800" : category === "low" ? "text-rose-800" : "text-charcoal"
             }`}>
               {category || "N/A"}
@@ -109,17 +109,17 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
             </div>
           </div>
 
-          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
-            <div className="font-serif text-2xl font-bold text-charcoal">
+          <div className="p-2 sm:p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className="font-serif text-xl sm:text-2xl font-bold text-charcoal">
               {numericScores.length}
             </div>
             <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
-              Numeric Ratings (1-10)
+              Numeric Ratings
             </div>
           </div>
 
-          <div className="p-2.5 rounded bg-card border border-warm-grey/60">
-            <div className="font-serif text-2xl font-bold text-olive">
+          <div className="p-2 sm:p-2.5 rounded bg-card border border-warm-grey/60">
+            <div className="font-serif text-xl sm:text-2xl font-bold text-olive">
               {noViewCount}
             </div>
             <div className="text-[10px] font-mono text-charcoal-muted uppercase mt-0.5">
@@ -127,7 +127,6 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
             </div>
           </div>
         </div>
-
 
         {!isComplete && (
           <div className="mb-6 p-3.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
@@ -139,7 +138,7 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
         )}
 
         {/* Answer Review Grid */}
-        <div className="space-y-2 mb-8 max-h-[460px] overflow-y-auto pr-2 border border-warm-grey rounded p-2 bg-paper">
+        <div className="space-y-2 mb-6 sm:mb-8 max-h-[460px] overflow-y-auto pr-1 sm:pr-2 border border-warm-grey rounded p-2 bg-paper">
           {parameters.map((param, idx) => {
             const ans = answers[param.parameter_id];
             const hasAnswer = Boolean(ans);
@@ -148,18 +147,18 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
               <div
                 key={param.parameter_id}
                 onClick={() => onEditParameter(idx)}
-                className={`p-3 rounded border flex items-center justify-between cursor-pointer transition-colors ${
+                className={`p-2.5 sm:p-3 rounded border flex items-center justify-between cursor-pointer transition-colors ${
                   !hasAnswer
                     ? "border-amber-300 bg-amber-50/60"
                     : "border-warm-grey bg-card hover:border-olive"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-charcoal-muted w-6">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-xs text-charcoal-muted w-6 flex-shrink-0">
                     #{param.display_order}
                   </span>
-                  <div>
-                    <div className="text-xs sm:text-sm font-medium text-charcoal">
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-medium text-charcoal truncate">
                       {param.parameter_name}
                     </div>
                     <div className="text-[10px] font-mono text-olive uppercase">
@@ -168,14 +167,14 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   {hasAnswer ? (
                     ans.isNoView ? (
                       <span className="px-2 py-0.5 rounded text-xs font-mono font-medium bg-warm-grey-light text-charcoal-muted">
                         No view
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-charcoal text-paper">
+                      <span className="px-2 sm:px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-charcoal text-paper">
                         {ans.score} / 10
                       </span>
                     )
@@ -192,11 +191,11 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
         </div>
 
         {/* Submit Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-warm-grey">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 pt-4 border-t border-warm-grey">
           <button
             type="button"
             onClick={onBackToWizard}
-            className="btn-secondary text-xs w-full sm:w-auto"
+            className="btn-secondary min-h-[44px] text-xs w-full sm:w-auto flex items-center justify-center"
           >
             ← Return to Questions
           </button>
@@ -205,7 +204,7 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
             type="button"
             disabled={!isComplete || isSubmitting}
             onClick={onSubmit}
-            className="btn-primary text-xs py-2.5 px-8 w-full sm:w-auto font-semibold"
+            className="btn-primary min-h-[44px] text-xs py-2.5 px-8 w-full sm:w-auto font-semibold flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <span>Submitting Transaction...</span>

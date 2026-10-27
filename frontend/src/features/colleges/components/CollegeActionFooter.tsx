@@ -16,14 +16,14 @@ export const CollegeActionFooter: React.FC<CollegeActionFooterProps> = ({
   onAskAssistant,
 }) => {
   return (
-    <section className="mb-14">
-      <div className="editorial-card p-6 sm:p-8 bg-card border-warm-grey shadow-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-warm-grey pb-5 mb-6 gap-4">
+    <section className="mb-10 sm:mb-14">
+      <div className="editorial-card p-4 sm:p-6 md:p-8 bg-card border-warm-grey shadow-card">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-warm-grey pb-4 sm:pb-5 mb-5 sm:mb-6 gap-3 sm:gap-4">
           <div>
             <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
               Decision Support & Next Steps
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal mt-1">
+            <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-charcoal mt-1">
               Take Action on {college.name}
             </h2>
             <p className="text-xs text-charcoal-muted mt-1 font-sans">
@@ -33,7 +33,7 @@ export const CollegeActionFooter: React.FC<CollegeActionFooterProps> = ({
 
           <button
             onClick={() => onRate(college.college_id)}
-            className="btn-primary text-xs py-2.5 px-6 font-semibold flex items-center justify-center gap-2 self-start md:self-auto shadow-xs whitespace-nowrap"
+            className="btn-primary min-h-[44px] text-xs py-2.5 px-6 font-semibold flex items-center justify-center gap-2 self-stretch sm:self-start md:self-auto shadow-xs whitespace-nowrap"
           >
             <MessageSquareQuote className="w-4 h-4 text-paper" />
             <span>Rate This College</span>

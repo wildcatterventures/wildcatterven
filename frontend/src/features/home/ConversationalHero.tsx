@@ -101,7 +101,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   };
 
   return (
-    <section className="relative overflow-hidden bg-paper min-h-[580px] md:min-h-[620px] lg:min-h-[660px] flex items-center">
+    <section className="relative overflow-hidden bg-paper min-h-[500px] sm:min-h-[580px] md:min-h-[620px] lg:min-h-[660px] flex items-center">
       {/* 1. Cinematic Full-Bleed Campus Photograph Layer */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
         <img
@@ -122,11 +122,11 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
       </div>
 
       {/* 2. Left-Anchored Editorial & Interactive Content Container */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 sm:py-16 md:py-20 lg:py-24">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-8 sm:py-14 md:py-20 lg:py-24">
         <div className="max-w-xl lg:max-w-2xl flex flex-col justify-center">
           
           {/* Small Editorial Header Label */}
-          <div className="inline-flex items-center gap-2 mb-4 self-start">
+          <div className="inline-flex items-center gap-2 mb-3 sm:mb-4 self-start flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider font-bold bg-olive-light text-olive border border-olive/30">
               Vol. 01 • Student Intelligence
             </span>
@@ -136,70 +136,77 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           </div>
 
           {/* Display Headline */}
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.75rem] font-bold tracking-tight text-charcoal mb-4 leading-[1.12]">
+          <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl lg:text-[3.75rem] font-bold tracking-tight text-charcoal mb-3 sm:mb-4 leading-[1.12]">
             College life. <br />
             <span className="italic font-normal text-olive">Without the editing.</span>
           </h1>
 
           {/* Concise Supporting Text */}
-          <p className="text-sm sm:text-base text-charcoal-muted max-w-xl mb-7 sm:mb-8 leading-relaxed font-sans">
+          <p className="text-xs sm:text-base text-charcoal-muted max-w-xl mb-5 sm:mb-8 leading-relaxed font-sans">
             Surface the lived experiences behind prospectus claims. Unedited ratings across food quality, hostels, faculty accessibility, ragging prevention, and placements—governed by deterministic 20-submission blocks.
           </p>
 
           {/* Micro-label above search for focal clarity */}
-          <label htmlFor="hero-search-input" className="block text-[11px] font-mono uppercase tracking-wider text-charcoal/70 mb-2 font-medium">
+          <label htmlFor="hero-search-input" className="block text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal/70 mb-2 font-medium">
             Search verified metrics or ask AI directly
           </label>
 
           {/* Conversational Text & Voice Search Box */}
           <form
             onSubmit={handleSubmit}
-            className="editorial-card p-1.5 sm:p-2 bg-card flex items-center gap-2 shadow-card max-w-xl mb-4 border-charcoal/20 focus-within:border-olive focus-within:ring-2 focus-within:ring-olive/20 transition-all rounded"
+            className="editorial-card p-1.5 sm:p-2 bg-card/95 backdrop-blur-sm shadow-card max-w-xl mb-4 border-charcoal/20 focus-within:border-olive focus-within:ring-2 focus-within:ring-olive/20 transition-all rounded flex flex-col xs:flex-row items-stretch xs:items-center gap-2"
           >
-            <Search className="w-5 h-5 text-charcoal-muted ml-2 sm:ml-2.5 flex-shrink-0" />
-            <input
-              id="hero-search-input"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                isListening
-                  ? "Listening... speak query now"
-                  : "Search colleges, city, or ask: 'Hostels at SFIT'..."
-              }
-              className="flex-1 bg-transparent px-2 py-2 text-xs sm:text-sm text-charcoal placeholder:text-charcoal-muted/60 focus:outline-none font-sans"
-            />
+            <div className="flex items-center flex-1 min-w-0">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-charcoal-muted ml-2 sm:ml-2.5 flex-shrink-0" />
+              <input
+                id="hero-search-input"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  isListening
+                    ? "Listening... speak query now"
+                    : "Search colleges, city, or ask AI..."
+                }
+                className="w-full bg-transparent px-2.5 py-2 text-xs sm:text-sm text-charcoal placeholder:text-charcoal-muted/60 focus:outline-none font-sans min-w-0"
+              />
+              <button
+                type="button"
+                onClick={handleVoiceToggle}
+                title={isListening ? "Stop listening" : "Speak search with voice"}
+                className={`min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded transition-colors flex-shrink-0 ${
+                  isListening
+                    ? "bg-rose-600 text-white animate-pulse"
+                    : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
+                }`}
+                aria-label={isListening ? "Stop listening" : "Voice search"}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={handleVoiceToggle}
-              title={isListening ? "Stop listening" : "Speak search with voice"}
-              className={`p-2 rounded transition-colors ${
-                isListening
-                  ? "bg-rose-600 text-white animate-pulse"
-                  : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
-              }`}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
+            <div className="flex items-center gap-1.5 xs:gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const targetQuery = query.trim() || "What can you tell me about the colleges on Campus Uncut?";
+                  onOpenAssistantWithQuery(targetQuery);
+                }}
+                title="Ask Groq AI Assistant"
+                className="flex-1 xs:flex-initial min-h-[40px] px-3 py-2 rounded bg-olive-light border border-olive/30 text-olive hover:bg-olive hover:text-paper text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Ask AI</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                const targetQuery = query.trim() || "What can you tell me about the colleges on Campus Uncut?";
-                onOpenAssistantWithQuery(targetQuery);
-              }}
-              title="Ask Groq AI Assistant"
-              className="px-3 py-2 rounded bg-olive-light border border-olive/30 text-olive hover:bg-olive hover:text-paper text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ask AI</span>
-            </button>
-
-            <button type="submit" className="btn-primary py-2 px-4 text-xs font-semibold">
-              <span>Explore</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+              <button
+                type="submit"
+                className="btn-primary flex-1 xs:flex-initial min-h-[40px] py-2 px-4 text-xs font-semibold flex items-center justify-center gap-1.5"
+              >
+                <span>Explore</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </form>
 
           {/* Voice Feedback / Error Banner */}
@@ -217,7 +224,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           )}
 
           {/* Suggested Prompt Chips */}
-          <div className="flex items-center gap-1.5 flex-wrap text-xs text-charcoal-muted max-w-xl mb-7">
+          <div className="flex items-center gap-1.5 flex-wrap text-xs text-charcoal-muted max-w-xl mb-6 sm:mb-7">
             <span className="font-mono text-[10px] uppercase text-charcoal/70 mr-1 font-semibold">
               Suggested:
             </span>
@@ -231,7 +238,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
                 key={sample}
                 type="button"
                 onClick={() => onOpenAssistantWithQuery(sample)}
-                className="px-2.5 py-1 rounded bg-card/90 backdrop-blur-sm border border-warm-grey hover:border-olive hover:text-charcoal text-[11px] font-sans transition-colors"
+                className="px-2.5 py-1 rounded bg-card/90 backdrop-blur-sm border border-warm-grey hover:border-olive hover:text-charcoal text-[11px] font-sans transition-colors min-h-[32px] flex items-center"
               >
                 {sample}
               </button>
@@ -239,23 +246,22 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2.5 sm:gap-3">
             <button
               onClick={onExplore}
-              className="btn-primary text-xs py-2.5 px-5 font-semibold"
+              className="btn-primary min-h-[44px] text-xs py-2.5 px-5 font-semibold flex items-center justify-center"
             >
               <BookOpen className="w-4 h-4" />
               <span>Explore Directory</span>
             </button>
             <button
               onClick={onRate}
-              className="btn-secondary text-xs py-2.5 px-5 font-semibold bg-paper/50 backdrop-blur-sm"
+              className="btn-secondary min-h-[44px] text-xs py-2.5 px-5 font-semibold bg-paper/50 backdrop-blur-sm flex items-center justify-center"
             >
               <MessageSquareQuote className="w-4 h-4 text-olive" />
               <span>Rate Your Campus</span>
             </button>
           </div>
-
         </div>
       </div>
     </section>

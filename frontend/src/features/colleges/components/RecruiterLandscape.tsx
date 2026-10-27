@@ -19,16 +19,16 @@ export const RecruiterLandscape: React.FC<RecruiterLandscapeProps> = ({
   return (
     <section className="mb-10 space-y-6">
       {/* 1. Recruiter Landscape Strip */}
-      <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-4 mb-5 gap-2">
+      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-olive" />
-              <span className="text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
+              <Briefcase className="w-4 h-4 text-olive flex-shrink-0" />
+              <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
                 Career Pathways • Institutional Placement
               </span>
             </div>
-            <h2 className="font-serif text-2xl font-bold text-charcoal mt-1">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mt-1">
               Where Graduates Go — Verified Recruitment Landscape
             </h2>
           </div>
@@ -42,12 +42,12 @@ export const RecruiterLandscape: React.FC<RecruiterLandscapeProps> = ({
 
         {hasRecruiters ? (
           <div>
-            <p className="text-xs text-charcoal-muted font-sans mb-6 max-w-3xl leading-relaxed">
+            <p className="text-xs text-charcoal-muted font-sans mb-5 sm:mb-6 max-w-3xl leading-relaxed">
               Companies demonstrably visiting or recruiting from <strong>{college.name}</strong> as documented in published placement cell records. We report verified corporate presence rather than unverified commercial ranking metrics.
             </p>
 
             {/* Grid of Verified Recruiters */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-3.5">
               {recruiters.map((recruiter, idx) => (
                 <div
                   key={idx}

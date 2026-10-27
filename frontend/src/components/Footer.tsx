@@ -3,8 +3,8 @@ import { ShieldCheck, HeartHandshake, Database } from "lucide-react";
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="border-t border-warm-grey bg-paper text-charcoal py-12 px-4 sm:px-6 lg:px-8 mt-20">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <footer className="border-t border-warm-grey bg-paper text-charcoal py-8 sm:py-12 px-4 sm:px-6 lg:px-8 mt-10 sm:mt-16 md:mt-20">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-8">
         <div>
           <h4 className="font-serif text-lg font-bold mb-2">Campus Uncut</h4>
           <p className="text-xs text-charcoal-muted leading-relaxed">
@@ -42,7 +42,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto pt-6 border-t border-warm-grey flex flex-col sm:flex-row items-center justify-between text-[11px] text-charcoal-muted gap-2 font-mono">
+      <div className="max-w-7xl mx-auto pt-6 border-t border-warm-grey flex flex-col sm:flex-row items-center justify-between text-[11px] text-charcoal-muted gap-2 font-mono text-center sm:text-left">
         <div>Campus Uncut © 2026. Built on an uncompromised ₹0 development budget.</div>
         <div>FastAPI • Supabase PostgreSQL • React Vite</div>
       </div>

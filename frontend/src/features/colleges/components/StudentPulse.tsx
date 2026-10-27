@@ -184,16 +184,16 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
   return (
     <section id="student-pulse" className="mb-10 space-y-6">
       {/* 1. VISUALIZATION 1: Category Performance Profile */}
-      <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-4 mb-5 gap-2">
+      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-olive" />
-              <span className="text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
+              <Activity className="w-4 h-4 text-olive flex-shrink-0" />
+              <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
                 Student Pulse • Thematic Rubric
               </span>
             </div>
-            <h2 className="font-serif text-2xl font-bold text-charcoal mt-1">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mt-1">
               Category Performance Profile
             </h2>
           </div>
@@ -209,7 +209,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
           </div>
         </div>
 
-        <p className="text-xs text-charcoal-muted font-sans mb-5 leading-relaxed">
+        <p className="text-xs text-charcoal-muted font-sans mb-4 sm:mb-5 leading-relaxed">
           Mean ratings across the 6 thematic groups (1–10 scale). Click any category to filter the 25 individual parameters below.
         </p>
 
@@ -284,34 +284,34 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
 
       {/* 2. VISUALIZATION 2: Response Distribution Histogram */}
       {aggregateDistribution.totalVotes > 0 && (
-        <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-4 mb-4 gap-2">
+        <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-3 sm:mb-4 gap-2">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-wider text-charcoal-muted block">
                 Distribution Profile
               </span>
-              <h3 className="font-serif text-lg font-bold text-charcoal mt-0.5">
+              <h3 className="font-serif text-base sm:text-lg font-bold text-charcoal mt-0.5">
                 Rating Density Across 1–10 Scale
               </h3>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-sans">
+            <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs font-sans flex-wrap">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-700" />
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-700 flex-shrink-0" />
                 <span>Low &lt;4.0 ({aggregateDistribution.lowPct.toFixed(0)}%)</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-olive" />
+                <span className="w-2.5 h-2.5 rounded-full bg-olive flex-shrink-0" />
                 <span>Neutral 4.0–7.9 ({aggregateDistribution.neutralPct.toFixed(0)}%)</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-700" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-700 flex-shrink-0" />
                 <span>High &ge;8.0 ({aggregateDistribution.highPct.toFixed(0)}%)</span>
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-10 gap-1.5 text-center items-end h-24 pt-4">
+          <div className="grid grid-cols-10 gap-1 sm:gap-1.5 text-center items-end h-24 pt-4">
             {Array.from({ length: 10 }, (_, i) => {
               const scoreNum = i + 1;
               const freq = aggregateDistribution.freqByScore[scoreNum] || 0;
@@ -320,7 +320,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
 
               return (
                 <div key={scoreNum} className="flex flex-col items-center h-full justify-end group">
-                  <span className="text-[10px] font-mono font-bold text-charcoal mb-1">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold text-charcoal mb-1">
                     {freq > 0 ? freq : ""}
                   </span>
                   <div
@@ -344,23 +344,23 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
             })}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] font-mono text-charcoal-muted pt-3 border-t border-warm-grey/60 mt-3">
+          <div className="flex flex-col xs:flex-row items-center justify-between text-[10px] sm:text-[11px] font-mono text-charcoal-muted pt-3 border-t border-warm-grey/60 mt-3 gap-1 text-center xs:text-left">
             <span>Score 1 (Critical)</span>
-            <span className="text-charcoal-muted/80">Excluded "No View" selections are transparently omitted from score density</span>
+            <span className="text-charcoal-muted/80 hidden sm:inline">Excluded "No View" selections are transparently omitted from score density</span>
             <span>Score 10 (Exemplary)</span>
           </div>
         </div>
       )}
 
       {/* 3. VISUALIZATION 3: Parameter Explorer */}
-      <div id="parameter-explorer" className="editorial-card p-6 bg-card border-warm-grey shadow-card">
+      <div id="parameter-explorer" className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
         {/* Explorer Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-warm-grey pb-5 mb-5 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-warm-grey pb-4 sm:pb-5 mb-4 sm:mb-5 gap-3">
           <div>
             <span className="font-mono text-[10px] uppercase tracking-wider text-olive font-bold">
               Institutional Rubric Explorer
             </span>
-            <h3 className="font-serif text-2xl font-bold text-charcoal mt-0.5">
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mt-0.5">
               All 25 Parameters & Evidence Detail
             </h3>
             <p className="text-xs text-charcoal-muted mt-1 font-sans">
@@ -369,22 +369,22 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
           </div>
 
           {/* Search & Sort Controls */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="relative">
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
+            <div className="relative flex-1 xs:flex-initial">
               <Search className="w-3.5 h-3.5 text-charcoal-muted absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Filter 25 parameters..."
-                className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-xs bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+                className="w-full xs:w-44 sm:w-48 pl-8 pr-3 py-1.5 min-h-[36px] text-xs bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
               />
             </div>
 
-            <div className="flex items-center gap-1 bg-paper border border-warm-grey rounded p-0.5 text-xs">
+            <div className="flex items-center justify-between xs:justify-start gap-1 bg-paper border border-warm-grey rounded p-0.5 text-xs">
               <button
                 onClick={() => setSortBy("ranked_high")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`flex-1 xs:flex-initial px-2 py-1 min-h-[32px] rounded text-[11px] font-medium transition-colors ${
                   sortBy === "ranked_high"
                     ? "bg-charcoal text-paper font-semibold shadow-xs"
                     : "text-charcoal-muted hover:text-charcoal"
@@ -395,7 +395,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               </button>
               <button
                 onClick={() => setSortBy("ranked_low")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`flex-1 xs:flex-initial px-2 py-1 min-h-[32px] rounded text-[11px] font-medium transition-colors ${
                   sortBy === "ranked_low"
                     ? "bg-charcoal text-paper font-semibold shadow-xs"
                     : "text-charcoal-muted hover:text-charcoal"
@@ -406,7 +406,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               </button>
               <button
                 onClick={() => setSortBy("order")}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`flex-1 xs:flex-initial px-2 py-1 min-h-[32px] rounded text-[11px] font-medium transition-colors ${
                   sortBy === "order"
                     ? "bg-charcoal text-paper font-semibold shadow-xs"
                     : "text-charcoal-muted hover:text-charcoal"
@@ -420,10 +420,10 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
         </div>
 
         {/* Thematic Category Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-5 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-4 sm:mb-5 scrollbar-none -mx-1 px-1">
           <button
             onClick={() => onSelectCategory("all")}
-            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all font-medium ${
+            className={`px-3 py-1 min-h-[34px] rounded-full text-xs whitespace-nowrap transition-all font-medium flex items-center ${
               selectedCategory === "all"
                 ? "bg-charcoal text-paper font-semibold shadow-xs"
                 : "bg-paper border border-warm-grey text-charcoal hover:border-charcoal/60"
@@ -440,7 +440,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all flex items-center gap-1.5 font-medium ${
+                className={`px-3 py-1 min-h-[34px] rounded-full text-xs whitespace-nowrap transition-all flex items-center gap-1.5 font-medium ${
                   isSelected
                     ? "bg-charcoal text-paper font-semibold shadow-xs"
                     : "bg-paper border border-warm-grey text-charcoal hover:border-charcoal/60"
@@ -470,13 +470,13 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
 
         {/* Active Category Header Callout */}
         {activeCategoryObj && (
-          <div className="mb-5 p-3.5 rounded bg-warm-grey-light/40 border border-warm-grey/80 flex items-center justify-between text-xs font-sans">
+          <div className="mb-4 sm:mb-5 p-3 sm:p-3.5 rounded bg-warm-grey-light/40 border border-warm-grey/80 flex flex-col xs:flex-row xs:items-center justify-between text-xs font-sans gap-2">
             <div>
               <strong className="text-charcoal">{activeCategoryObj.name}:</strong>{" "}
               <span className="text-charcoal-muted">{activeCategoryObj.description}</span>
             </div>
             {activeCategoryStat?.avg !== null && activeCategoryStat?.avg !== undefined && (
-              <span className="font-mono font-bold text-charcoal ml-2 flex-shrink-0">
+              <span className="font-mono font-bold text-charcoal self-start xs:self-auto flex-shrink-0">
                 Mean: {activeCategoryStat.avg.toFixed(2)} / 10
               </span>
             )}
@@ -497,29 +497,29 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                 <div
                   key={param.parameter_id}
                   id={`param-${param.parameter_key}`}
-                  className={`p-4 rounded-md border transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-md border transition-all ${
                     isHighlighted
                       ? "border-olive bg-olive-light/20 ring-1 ring-olive"
                       : "border-warm-grey bg-paper/30 hover:border-charcoal/40"
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 xs:gap-2 mb-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <span className="font-mono text-xs text-charcoal-muted font-bold">
                         #{param.display_order.toString().padStart(2, "0")}
                       </span>
-                      <h4 className="font-serif text-base font-bold text-charcoal">
+                      <h4 className="font-serif text-sm sm:text-base font-bold text-charcoal">
                         {param.parameter_name}
                       </h4>
-                      <span className="text-[10px] font-mono text-olive uppercase tracking-wider ml-1">
+                      <span className="text-[10px] font-mono text-olive uppercase tracking-wider">
                         {param.parameter_category}
                       </span>
                     </div>
 
-                    <div className="flex items-baseline gap-1 self-end sm:self-auto font-mono">
+                    <div className="flex items-baseline gap-1 self-start xs:self-auto font-mono">
                       {hasScore ? (
                         <>
-                          <span className="font-serif text-xl font-bold text-charcoal">
+                          <span className="font-serif text-lg sm:text-xl font-bold text-charcoal">
                             {param.average_score?.toFixed(1)}
                           </span>
                           <span className="text-xs text-charcoal-muted">/ 10</span>
@@ -549,8 +549,8 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                   </div>
 
                   {/* Subline with response counts and distribution trigger */}
-                  <div className="flex items-center justify-between text-xs text-charcoal-muted font-sans pt-1">
-                    <div className="flex items-center gap-2 text-[11px]">
+                  <div className="flex flex-col xs:flex-row xs:items-center justify-between text-xs text-charcoal-muted font-sans pt-1 gap-1.5">
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px]">
                       <span>
                         <strong>{param.numeric_response_count}</strong> numeric vote{param.numeric_response_count !== 1 ? "s" : ""}
                       </span>
@@ -564,7 +564,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                       {param.distributions && param.distributions.length > 0 && (
                         <button
                           onClick={() => setExpandedParamId(isExpanded ? null : param.parameter_id)}
-                          className="inline-flex items-center gap-1 text-[11px] text-charcoal hover:text-olive underline font-sans"
+                          className="inline-flex items-center gap-1 text-[11px] text-charcoal hover:text-olive underline font-sans min-h-[32px]"
                         >
                           <span>{isExpanded ? "Hide distribution" : "View 1–10 votes"}</span>
                           {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}

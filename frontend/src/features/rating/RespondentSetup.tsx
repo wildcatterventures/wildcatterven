@@ -120,13 +120,13 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
 
 
   return (
-    <div className="py-12 px-4 max-w-2xl mx-auto font-sans">
-      <div className="editorial-card p-6 sm:p-10 bg-card">
-        <div className="mb-8">
+    <div className="py-6 sm:py-12 px-3 sm:px-4 max-w-2xl mx-auto font-sans">
+      <div className="editorial-card p-4 sm:p-8 md:p-10 bg-card">
+        <div className="mb-6 sm:mb-8">
           <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
             Rating Flow • Step 1 of 3
           </span>
-          <h1 className="font-serif text-3xl font-bold text-charcoal mt-1">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal mt-1">
             Declare Your Affiliation
           </h1>
           <p className="text-xs sm:text-sm text-charcoal-muted mt-2 leading-relaxed">
@@ -205,12 +205,12 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
 
           {/* Official College Email Input */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between mb-2 gap-1.5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Official College Email Address *
               </label>
               {selectedCollege?.email_domains && (
-                <span className="text-[11px] font-mono text-olive bg-warm-grey-light px-2 py-0.5 rounded border border-warm-grey">
+                <span className="text-[10px] sm:text-[11px] font-mono text-olive bg-warm-grey-light px-2 py-0.5 rounded border border-warm-grey self-start xs:self-auto break-all">
                   Domain: {selectedCollege.email_domains.split(",").map((d) => `@${d.trim()}`).join(", ")}
                 </span>
               )}
@@ -342,11 +342,11 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="pt-6 border-t border-warm-grey flex items-center justify-between">
+          <div className="pt-6 border-t border-warm-grey flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
             <button
               type="button"
               onClick={onCancel}
-              className="btn-secondary text-xs"
+              className="btn-secondary min-h-[44px] text-xs flex items-center justify-center"
             >
               Cancel
             </button>
@@ -361,7 +361,7 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
                   ? emailValidation.error
                   : undefined
               }
-              className={`btn-primary text-xs py-2.5 px-6 transition-opacity ${
+              className={`btn-primary min-h-[44px] text-xs py-2.5 px-6 transition-opacity flex items-center justify-center gap-2 ${
                 !canSubmit ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >

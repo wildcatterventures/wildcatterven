@@ -70,11 +70,12 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/50 backdrop-blur-sm">
-      <div className="editorial-card w-full max-w-lg p-6 sm:p-8 bg-paper relative shadow-dropdown">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/50 backdrop-blur-sm overflow-y-auto">
+      <div className="editorial-card w-full max-w-lg p-5 sm:p-8 bg-paper relative shadow-dropdown my-auto max-h-[92vh] overflow-y-auto">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-charcoal-muted hover:text-charcoal p-1"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 min-w-[44px] min-h-[44px] flex items-center justify-center text-charcoal-muted hover:text-charcoal p-2 rounded hover:bg-warm-grey-light"
+          aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
@@ -166,15 +167,15 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-end gap-3 border-t border-warm-grey mt-6">
+            <div className="pt-4 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-end gap-2.5 sm:gap-3 border-t border-warm-grey mt-6">
               <button
                 type="button"
                 onClick={handleClose}
-                className="btn-secondary text-xs"
+                className="btn-secondary min-h-[44px] flex items-center justify-center text-xs"
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-primary text-xs">
+              <button type="submit" className="btn-primary min-h-[44px] flex items-center justify-center text-xs">
                 Continue to Confirmation
               </button>
             </div>
@@ -206,18 +207,18 @@ export const UnknownCollegeModal: React.FC<UnknownCollegeModalProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-end gap-3 border-t border-warm-grey mt-6">
+            <div className="pt-4 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-end gap-2.5 sm:gap-3 border-t border-warm-grey mt-6">
               <button
                 type="button"
                 onClick={() => setStep("form")}
-                className="btn-secondary text-xs"
+                className="btn-secondary min-h-[44px] flex items-center justify-center text-xs"
               >
                 Back & Edit
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCreation}
-                className="btn-primary text-xs"
+                className="btn-primary min-h-[44px] flex items-center justify-center text-xs"
               >
                 Confirm & Add College
               </button>

@@ -148,21 +148,21 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
         </div>
 
         {/* College Identity & Institutional Context */}
-        <div className="p-5 flex flex-col flex-1 justify-between gap-3">
+        <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
           <div>
-            {/* Title Container — Dedicated fixed height locks 1-line and 2-line titles to the exact same vertical slot */}
-            <div className="h-14 sm:h-16 flex flex-col justify-start">
+            {/* Title Container — min-height allows natural wrapping without clipping */}
+            <div className="min-h-[3rem] sm:min-h-[3.5rem] flex flex-col justify-start">
               <h3
                 onClick={() => onSelect(college.college_id)}
-                className="font-serif text-lg sm:text-xl font-bold text-charcoal group-hover:text-olive cursor-pointer transition-colors leading-snug line-clamp-2"
+                className="font-serif text-base sm:text-lg lg:text-xl font-bold text-charcoal group-hover:text-olive cursor-pointer transition-colors leading-snug line-clamp-2"
                 title={college.name}
               >
                 {college.name}
               </h3>
             </div>
 
-            {/* Factual Institutional Description — Dedicated fixed height locks description baseline */}
-            <div className="h-10 sm:h-11 mt-2 flex flex-col justify-start">
+            {/* Factual Institutional Description */}
+            <div className="min-h-[2.5rem] mt-1.5 sm:mt-2 flex flex-col justify-start">
               {facts?.description ? (
                 <p className="text-xs text-charcoal-muted font-sans leading-relaxed line-clamp-2">
                   {facts.description}
@@ -174,8 +174,8 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
               )}
             </div>
 
-            {/* Real Institutional Fact Tags — Dedicated fixed height locks badge baseline with no line-breaking */}
-            <div className="h-7 mt-2.5 flex items-center gap-1.5 text-[11px] font-sans text-charcoal-muted overflow-hidden">
+            {/* Real Institutional Fact Tags */}
+            <div className="min-h-[1.75rem] mt-2 flex items-center gap-1.5 text-[11px] font-sans text-charcoal-muted flex-wrap">
               {facts?.established && (
                 <span className="px-2 py-0.5 rounded bg-warm-grey-light/70 border border-warm-grey/80 text-charcoal font-medium whitespace-nowrap shrink-0">
                   Est. {facts.established}
@@ -197,7 +197,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
             </div>
           </div>
 
-          {/* Student Perspective Summary — Quiet, Secondary, & Understated */}
+          {/* Student Perspective Summary */}
           <div className="pt-3 border-t border-warm-grey/70 mt-auto flex items-center justify-between text-xs font-sans">
             {hasRatings ? (
               <div className="flex items-center gap-1.5 text-charcoal font-medium">
@@ -223,12 +223,12 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
         </div>
       </div>
 
-      {/* Actions Footer — Restrained, Aligned, & Compact */}
-      <div className="p-5 pt-0 border-t border-warm-grey/50">
-        <div className="flex items-center gap-2 pt-3">
+      {/* Actions Footer */}
+      <div className="p-4 sm:p-5 pt-0 border-t border-warm-grey/50">
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 pt-3">
           <button
             onClick={() => onSelect(college.college_id)}
-            className="flex-1 btn-primary text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 group/btn"
+            className="flex-1 btn-primary min-h-[40px] text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 group/btn"
             title={`Explore ${college.name}`}
           >
             <span>Explore college</span>
@@ -236,7 +236,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
           </button>
           <button
             onClick={() => onRate(college.college_id)}
-            className="btn-secondary text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 whitespace-nowrap text-charcoal hover:border-charcoal hover:bg-card"
+            className="btn-secondary min-h-[40px] text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 whitespace-nowrap text-charcoal hover:border-charcoal hover:bg-card"
             title={`Rate ${college.name}`}
           >
             <span>{hasRatings ? "Rate college" : "Write a review"}</span>

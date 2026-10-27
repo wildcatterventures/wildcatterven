@@ -62,7 +62,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
 
         <button
           onClick={onOpenUnknownModal}
-          className="btn-primary text-xs self-start md:self-auto py-2.5 px-4 font-semibold"
+          className="btn-primary min-h-[44px] text-xs self-stretch sm:self-start md:self-auto py-2.5 px-4 font-semibold flex items-center justify-center gap-1.5"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Add Unlisted College</span>
@@ -70,33 +70,34 @@ export const CollegeList: React.FC<CollegeListProps> = ({
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-3 rounded border border-warm-grey shadow-subtle">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-card p-3 sm:p-3.5 rounded border border-warm-grey shadow-subtle">
         <div className="relative w-full sm:max-w-md">
-          <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by college name, city, state, or short code..."
-            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+            placeholder="Search by college name, city, state, or code..."
+            className="w-full min-h-[44px] pl-9 pr-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
           />
         </div>
 
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-          <label className="flex items-center gap-2 text-xs text-charcoal cursor-pointer select-none">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <label className="flex items-center gap-2 text-xs text-charcoal cursor-pointer select-none min-h-[40px]">
             <input
               type="checkbox"
               checked={includeDemo}
               onChange={(e) => setIncludeDemo(e.target.checked)}
               className="rounded border-warm-grey text-olive focus:ring-olive w-4 h-4"
             />
-            <span className="text-xs font-sans text-charcoal-muted">Include Simulated Demo Campuses</span>
+            <span className="text-[11px] sm:text-xs font-sans text-charcoal-muted">Include Demo Campuses</span>
           </label>
 
           <button
             onClick={() => fetchColleges(query, includeDemo)}
             title="Refresh records from PostgreSQL"
-            className="p-2 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light border border-warm-grey transition-colors"
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light border border-warm-grey transition-colors flex-shrink-0"
+            aria-label="Refresh records"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -121,9 +122,9 @@ export const CollegeList: React.FC<CollegeListProps> = ({
 
       {/* Loading Skeleton */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="editorial-card p-6 bg-card animate-pulse space-y-4">
+            <div key={i} className="editorial-card p-5 sm:p-6 bg-card animate-pulse space-y-4">
               <div className="h-6 bg-warm-grey rounded w-3/4" />
               <div className="h-4 bg-warm-grey rounded w-1/2" />
               <div className="h-20 bg-warm-grey-light rounded w-full mt-4" />
@@ -131,7 +132,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
           ))}
         </div>
       ) : colleges.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {colleges.map((college) => (
             <CollegeCard
               key={college.college_id}
@@ -143,15 +144,15 @@ export const CollegeList: React.FC<CollegeListProps> = ({
         </div>
       ) : (
         /* Illustrated Empty State */
-        <div className="editorial-card p-8 sm:p-12 text-center bg-card max-w-xl mx-auto my-12 border-warm-grey shadow-card">
-          <div className="w-48 h-32 mx-auto mb-6">
+        <div className="editorial-card p-6 sm:p-8 md:p-12 text-center bg-card max-w-xl mx-auto my-8 sm:my-12 border-warm-grey shadow-card">
+          <div className="w-40 sm:w-48 h-28 sm:h-32 mx-auto mb-5 sm:mb-6">
             <img
               src="/images/empty_search.svg"
               alt="No colleges found illustration"
               className="w-full h-full object-contain"
             />
           </div>
-          <h3 className="font-serif text-2xl font-bold text-charcoal mb-2">
+          <h3 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mb-2">
             No Colleges Found
           </h3>
           <p className="text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto mb-6 leading-relaxed">
@@ -161,7 +162,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
           </p>
           <button
             onClick={onOpenUnknownModal}
-            className="btn-primary text-xs py-2.5 px-6 font-semibold"
+            className="btn-primary min-h-[44px] text-xs py-2.5 px-6 font-semibold flex items-center justify-center gap-1.5 mx-auto"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add This College to Directory</span>

@@ -245,6 +245,20 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
     }
   }, [isOpen, initialQuery]);
 
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        stopSpeaking();
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     return () => {
       stopSpeaking();
@@ -391,9 +405,25 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-card border-l border-warm-grey z-50 shadow-2xl flex flex-col font-sans animate-in slide-in-from-right duration-200">
-      {/* Drawer Header */}
-      <div className="p-4 border-b border-warm-grey flex items-center justify-between bg-paper">
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Backdrop Scrim */}
+      <div
+        className="fixed inset-0 bg-charcoal/50 backdrop-blur-xs transition-opacity"
+        onClick={() => {
+          stopSpeaking();
+          onClose();
+        }}
+        aria-hidden="true"
+      />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Campus Intelligence Assistant"
+        className="fixed inset-y-0 right-0 w-full sm:w-[460px] max-w-full bg-card border-l border-warm-grey z-50 shadow-2xl flex flex-col font-sans animate-in slide-in-from-right duration-200"
+      >
+        {/* Drawer Header */}
+        <div className="p-4 border-b border-warm-grey flex items-center justify-between bg-paper">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded bg-olive-light flex items-center justify-center text-olive border border-olive/20">
             <Sparkles className="w-4 h-4" />
@@ -437,7 +467,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
                 setVoicePlaybackEnabled(!voicePlaybackEnabled);
               }}
               title={voicePlaybackEnabled ? "Mute voice playback" : "Enable voice playback"}
-              className={`p-1.5 rounded transition-colors ${
+              className={`min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded transition-colors ${
                 voicePlaybackEnabled
                   ? "text-olive bg-olive-light"
                   : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
@@ -456,7 +486,8 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
               stopSpeaking();
               onClose();
             }}
-            className="p-1.5 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light"
+            aria-label="Close Assistant"
           >
             <X className="w-5 h-5" />
           </button>
@@ -734,7 +765,7 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       )}
 
       {/* Input Area */}
-      <div className="p-3 border-t border-warm-grey bg-card">
+      <div className="p-3 pb-safe border-t border-warm-grey bg-card">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -749,14 +780,14 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
             placeholder={
               isListening ? "Listening... speak now" : "Ask about scores, ratings, or campuses..."
             }
-            className="flex-1 px-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+            className="flex-1 min-h-[44px] px-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
           />
 
           <button
             type="button"
             onClick={toggleListening}
             title={isListening ? "Stop listening" : "Speak with voice"}
-            className={`p-2 rounded transition-colors ${
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded transition-colors ${
               isListening
                 ? "bg-rose-600 text-white animate-pulse"
                 : "text-charcoal-muted hover:text-charcoal border border-warm-grey bg-paper"
@@ -768,12 +799,13 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="btn-primary p-2 text-xs"
+            className="btn-primary min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 text-xs"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       </div>
     </div>
+  </div>
   );
 };

@@ -19,30 +19,30 @@ export const CampusDNA: React.FC<CampusDNAProps> = ({
 
   return (
     <section className="mb-10">
-      <div className="editorial-card p-6 bg-card border-warm-grey shadow-card">
+      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
         {/* Section Masthead */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-warm-grey pb-4 mb-5 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <Dna className="w-4 h-4 text-olive" />
-              <span className="text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
+              <Dna className="w-4 h-4 text-olive flex-shrink-0" />
+              <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted">
                 Institutional Signature
               </span>
             </div>
-            <h2 className="font-serif text-2xl font-bold text-charcoal mt-1">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-charcoal mt-1">
               Campus DNA — Fact & Sentiment Signature
             </h2>
           </div>
 
-          <span className="text-xs text-charcoal-muted font-sans sm:text-right max-w-xs">
+          <span className="text-[11px] sm:text-xs text-charcoal-muted font-sans sm:text-right max-w-xs">
             Clearly separating verified official pillars from student-reported feedback.
           </span>
         </div>
 
         {/* Dual Pillar Comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Pillar 1: Verified Institutional Facts */}
-          <div className="p-5 rounded-md border border-warm-grey bg-paper/30 flex flex-col justify-between">
+          <div className="p-4 sm:p-5 rounded-md border border-warm-grey bg-paper/30 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-3 pb-2 border-b border-warm-grey/60">
                 <Landmark className="w-4 h-4 text-olive" />
