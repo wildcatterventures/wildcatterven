@@ -74,9 +74,7 @@ describe("voiceSession & SpeechRecognition helpers", () => {
   });
 
   describe("startSpeechSession Mock SpeechRecognition Simulation", () => {
-    it("manages session lifecycle, interim results, silence timer, and clean abort", (t, done) => {
-      let activeMock: any = null;
-
+    it("manages session lifecycle, interim results, silence timer, and clean abort", (_, done) => {
       class MockSpeechRecognition {
         continuous = false;
         interimResults = false;
@@ -87,10 +85,6 @@ describe("voiceSession & SpeechRecognition helpers", () => {
         onresult: any = null;
         onerror: any = null;
         onend: any = null;
-
-        constructor() {
-          activeMock = this;
-        }
 
         start() {
           setTimeout(() => {
@@ -176,7 +170,7 @@ describe("voiceSession & SpeechRecognition helpers", () => {
       (globalThis as any).window = originalWindow;
     });
 
-    it("does not invoke onFinalTranscript on onend if silence timeout already fired (prevents duplicate submission)", (t, done) => {
+    it("does not invoke onFinalTranscript on onend if silence timeout already fired (prevents duplicate submission)", (_, done) => {
       let finalTranscriptCalls = 0;
       let silenceTimeoutCalls = 0;
 
@@ -233,7 +227,7 @@ describe("voiceSession & SpeechRecognition helpers", () => {
       });
     });
 
-    it("user abort cancels timers and prevents onFinalTranscript or onSilenceTimeout", (t, done) => {
+    it("user abort cancels timers and prevents onFinalTranscript or onSilenceTimeout", (_, done) => {
       let callbacksFired = 0;
 
       class MockSpeechRecognition {
