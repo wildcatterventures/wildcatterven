@@ -102,12 +102,12 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
 
   return (
     <section className="relative overflow-hidden bg-paper flex items-center">
-      {/* 1. Cinematic Full-Bleed Campus Photograph Layer (Desktop/Tablet Only) */}
-      <div className="hidden md:block absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
+      {/* 1. Cinematic Full-Bleed Campus Photograph Layer (Both Mobile and Desktop) */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
         <img
           src="/images/hero_quad.jpg"
           alt="Indian university campus quad with students gathered on stone steps in candid discussion"
-          className="w-full h-full object-cover object-[78%_35%] lg:object-[72%_30%] translate-x-[10%] transition-opacity duration-700"
+          className="w-full h-full object-cover object-[78%_35%] md:object-[75%_35%] lg:object-[72%_30%] translate-x-[8%] md:translate-x-[10%] transition-opacity duration-700 opacity-80 sm:opacity-90 md:opacity-100"
           loading="eager"
         />
 
@@ -145,27 +145,6 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           <p className="text-xs sm:text-base text-charcoal-muted max-w-xl mb-3 sm:mb-5 leading-relaxed font-sans">
             Surface the lived experiences behind prospectus claims. Unedited ratings across food quality, hostels, faculty accessibility, ragging prevention, and placements—governed by deterministic 20-submission blocks.
           </p>
-
-          {/* Mobile Editorial Campus Photograph Frame (Visible on Mobile Only) */}
-          <div className="md:hidden mb-4 sm:mb-6 rounded-lg overflow-hidden border border-warm-grey shadow-card relative">
-            <div className="aspect-[16/10] w-full overflow-hidden relative">
-              <img
-                src="/images/hero_quad.jpg"
-                alt="Indian university campus quad with students gathered on stone steps in candid discussion"
-                className="w-full h-full object-cover object-[72%_55%]"
-                loading="eager"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/65 via-charcoal/10 to-transparent pointer-events-none" />
-              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-paper text-[10px] font-mono pointer-events-none">
-                <span className="font-semibold tracking-wider uppercase bg-charcoal/80 px-2 py-0.5 rounded border border-white/20">
-                  Campus Quad • Candid Life
-                </span>
-                <span className="text-paper/85 tracking-wide">
-                  Unedited Reality
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* Micro-label above search for focal clarity */}
           <label htmlFor="hero-search-input" className="block text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal/70 mb-1.5 font-medium">
