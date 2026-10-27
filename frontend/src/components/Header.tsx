@@ -90,7 +90,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-olive self-center" />
               </div>
               <span className="hidden sm:inline-block text-xs text-charcoal-muted font-serif italic border-l border-warm-grey pl-3">
-                College life. Without the editing.
               </span>
             </div>
 

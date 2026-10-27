@@ -300,7 +300,7 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
     clearSilenceTimer();
 
     const finalized = (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
-    if (finalized && !sessionRecord.userAborted) {
+    if (finalized && !sessionRecord.userAborted && !sessionRecord.silenceFired) {
       options.onFinalTranscript?.(finalized);
     }
 

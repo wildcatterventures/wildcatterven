@@ -341,28 +341,40 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
             [param.parameter_id]: { score, isNoView },
           }));
 
-          // Persist answer in background to existing API
-          api
-            .saveAnswer(session.id, param.parameter_id, {
+          try {
+            // Persist answer to backend before scheduling progression
+            await api.saveAnswer(session.id, param.parameter_id, {
               score,
               is_no_view: isNoView,
-            })
-            .catch((err) => {
-              console.error("Failed to save voice answer:", err);
             });
 
-          // Visual confirmation delay (~900ms) before advancing to next question
-          advanceTimerRef.current = setTimeout(() => {
-            isAdvancingRef.current = false;
-            advanceTimerRef.current = null;
-
-            if (targetIndex < parameters.length - 1) {
-              setCurrentIndex(targetIndex + 1);
-            } else {
-              setVoiceStatus("idle");
-              setViewState("review");
+            // Prevent progression if user navigated away while save was in-flight
+            if (currentQuestionIndexRef.current !== targetIndex) {
+              isAdvancingRef.current = false;
+              return;
             }
-          }, 900);
+
+            setVoiceFeedback(`${feedbackMsg}. Advancing...`);
+
+            // Visual confirmation delay (~900ms) before advancing to next question
+            advanceTimerRef.current = setTimeout(() => {
+              isAdvancingRef.current = false;
+              advanceTimerRef.current = null;
+
+              if (targetIndex < parameters.length - 1) {
+                setCurrentIndex(targetIndex + 1);
+              } else {
+                setVoiceStatus("idle");
+                setViewState("review");
+              }
+            }, 900);
+          } catch (err: any) {
+            isAdvancingRef.current = false;
+            setVoiceStatus("error");
+            const errText = err?.message || "Failed to save answer. Please check your connection and tap retry.";
+            setVoiceError(errText);
+            setError(errText);
+          }
         },
         onSilenceTimeout: () => {
           if (isAdvancingRef.current) return;

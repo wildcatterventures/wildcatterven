@@ -175,5 +175,121 @@ describe("voiceSession & SpeechRecognition helpers", () => {
 
       (globalThis as any).window = originalWindow;
     });
+
+    it("does not invoke onFinalTranscript on onend if silence timeout already fired (prevents duplicate submission)", (t, done) => {
+      let finalTranscriptCalls = 0;
+      let silenceTimeoutCalls = 0;
+
+      class MockSpeechRecognition {
+        continuous = false;
+        interimResults = false;
+        lang = "";
+        onstart: any = null;
+        onresult: any = null;
+        onend: any = null;
+
+        start() {
+          setTimeout(() => {
+            this.onstart?.();
+            if (this.onresult) {
+              this.onresult({
+                resultIndex: 0,
+                results: [Object.assign([{ transcript: "mumbai colleges" }], { isFinal: true })],
+              });
+            }
+          }, 5);
+        }
+        stop() {
+          setTimeout(() => this.onend?.(), 5);
+        }
+        abort() {
+          setTimeout(() => this.onend?.(), 5);
+        }
+      }
+
+      const originalWindow = (globalThis as any).window;
+      (globalThis as any).window = {
+        SpeechRecognition: MockSpeechRecognition,
+      };
+
+      startSpeechSession({
+        silenceTimeoutMs: 25,
+        autoStopOnSilence: true,
+        onSilenceTimeout: (transcript) => {
+          silenceTimeoutCalls++;
+          assert.strictEqual(transcript, "mumbai colleges");
+        },
+        onFinalTranscript: () => {
+          finalTranscriptCalls++;
+        },
+        onEnd: () => {
+          setTimeout(() => {
+            assert.strictEqual(silenceTimeoutCalls, 1);
+            assert.strictEqual(finalTranscriptCalls, 0, "onFinalTranscript should not fire when silence already handled final transcript");
+            (globalThis as any).window = originalWindow;
+            done();
+          }, 15);
+        },
+      });
+    });
+
+    it("user abort cancels timers and prevents onFinalTranscript or onSilenceTimeout", (t, done) => {
+      let callbacksFired = 0;
+
+      class MockSpeechRecognition {
+        continuous = false;
+        interimResults = false;
+        lang = "";
+        onstart: any = null;
+        onresult: any = null;
+        onend: any = null;
+
+        start() {
+          setTimeout(() => {
+            this.onstart?.();
+            if (this.onresult) {
+              this.onresult({
+                resultIndex: 0,
+                results: [Object.assign([{ transcript: "cancelled query" }], { isFinal: true })],
+              });
+            }
+          }, 5);
+        }
+        stop() {
+          setTimeout(() => this.onend?.(), 5);
+        }
+        abort() {
+          setTimeout(() => this.onend?.(), 5);
+        }
+      }
+
+      const originalWindow = (globalThis as any).window;
+      (globalThis as any).window = {
+        SpeechRecognition: MockSpeechRecognition,
+      };
+
+      const controller = startSpeechSession({
+        silenceTimeoutMs: 30,
+        autoStopOnSilence: true,
+        onSilenceTimeout: () => {
+          callbacksFired++;
+        },
+        onFinalTranscript: () => {
+          callbacksFired++;
+        },
+      });
+
+      // Abort session midway
+      setTimeout(() => {
+        controller.abort();
+      }, 10);
+
+      // Verify that after silence timeout would have elapsed, 0 callbacks fired
+      setTimeout(() => {
+        assert.strictEqual(callbacksFired, 0, "No callbacks should fire on aborted session");
+        (globalThis as any).window = originalWindow;
+        done();
+      }, 50);
+    });
   });
 });

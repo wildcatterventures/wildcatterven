@@ -40,8 +40,12 @@ export const CollegeList: React.FC<CollegeListProps> = ({
   }, []);
 
   const isListening = speechState === "listening" || speechState === "starting";
+  const lastFetchedRef = useRef<string | null>(null);
 
   const fetchColleges = async (searchQuery: string, demo: boolean) => {
+    const key = `${searchQuery.trim()}::${demo}`;
+    if (lastFetchedRef.current === key) return;
+    lastFetchedRef.current = key;
     setLoading(true);
     setError(null);
     try {
@@ -103,11 +107,13 @@ export const CollegeList: React.FC<CollegeListProps> = ({
   };
 
   useEffect(() => {
+    // While microphone is actively listening, wait until speech recognition completes
+    if (isListening) return;
     const timer = setTimeout(() => {
       fetchColleges(query, includeDemo);
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, includeDemo]);
+  }, [query, includeDemo, isListening]);
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans">
