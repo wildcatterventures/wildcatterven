@@ -12,15 +12,23 @@ import {
   MicOff,
   Volume2,
   RotateCcw,
-  Sparkles,
+  Pause,
+  Play,
+  CheckCircle2,
 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import {
   isSpeechRecognitionSupported,
-  startSpeechRecognition,
+  isSpeechSynthesisSupported,
+  startSpeechSession,
+  SpeechSessionController,
   speakText,
   stopSpeaking,
 } from "../../lib/voice";
+import {
+  parseSpokenRating,
+  ParsedVoiceRating,
+} from "../../lib/voiceRatingParser";
 import type { CollegeSummary, ParameterRating } from "../../types/college";
 import type {
   RatingSessionResponse,
@@ -35,102 +43,6 @@ interface RatingWizardProps {
   college: CollegeSummary;
   onExit: () => void;
   onViewCollege: (collegeId: string) => void;
-}
-
-interface ParsedVoiceRating {
-  valid: boolean;
-  score: number | null;
-  isNoView: boolean;
-  isNavigation?: "previous" | "next" | "repeat" | "review";
-  rawText: string;
-  clarification?: string;
-}
-
-export function parseSpokenRating(text: string): ParsedVoiceRating {
-  const clean = text.trim().toLowerCase();
-
-  // Navigation commands
-  if (clean.includes("previous") || clean.includes("go back") || clean === "back" || clean === "last question") {
-    return { valid: true, score: null, isNoView: false, isNavigation: "previous", rawText: text };
-  }
-  if (clean.includes("repeat") || clean.includes("say again") || clean.includes("what question")) {
-    return { valid: true, score: null, isNoView: false, isNavigation: "repeat", rawText: text };
-  }
-  if (clean === "review" || clean.includes("review all") || clean === "finish") {
-    return { valid: true, score: null, isNoView: false, isNavigation: "review", rawText: text };
-  }
-  if (clean === "next question" || clean === "go forward") {
-    return { valid: true, score: null, isNoView: false, isNavigation: "next", rawText: text };
-  }
-
-  // Explicit No View / Skip / Pass expressions
-  if (
-    clean === "pass" ||
-    clean.includes("pass") ||
-    clean === "skip" ||
-    clean.includes("skip") ||
-    clean.includes("no view") ||
-    clean.includes("not applicable") ||
-    clean === "n/a" ||
-    clean === "na" ||
-    clean.includes("no opinion") ||
-    clean.includes("haven't used") ||
-    clean.includes("havent used") ||
-    clean.includes("never used") ||
-    clean.includes("don't know") ||
-    clean.includes("dont know")
-  ) {
-    return { valid: true, score: null, isNoView: true, rawText: text };
-  }
-
-  // Word-to-number dictionary for English / Indian English
-  const wordsToNum: Record<string, number> = {
-    one: 1, won: 1,
-    two: 2, to: 2, too: 2,
-    three: 3, tree: 3,
-    four: 4, for: 4, fore: 4,
-    five: 5,
-    six: 6,
-    seven: 7,
-    eight: 8, ate: 8,
-    nine: 9,
-    ten: 10,
-  };
-
-  // Reject out of range numbers with explicit clarification
-  const outOfRangeRegex = /\b(0|1[1-9]|[2-9]\d|zero|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i;
-  if (outOfRangeRegex.test(clean)) {
-    return {
-      valid: false,
-      score: null,
-      isNoView: false,
-      rawText: text,
-      clarification: "Scores must be between 1 and 10, or say 'No view', 'Pass', or 'Skip'.",
-    };
-  }
-
-  // Match digits 1-10
-  const digitMatch = clean.match(/\b(10|[1-9])\b/);
-  if (digitMatch) {
-    const val = parseInt(digitMatch[1], 10);
-    return { valid: true, score: val, isNoView: false, rawText: text };
-  }
-
-  // Match word numbers 1-10
-  for (const [w, num] of Object.entries(wordsToNum)) {
-    const wordRegex = new RegExp(`\\b${w}\\b`, "i");
-    if (wordRegex.test(clean)) {
-      return { valid: true, score: num, isNoView: false, rawText: text };
-    }
-  }
-
-  return {
-    valid: false,
-    score: null,
-    isNoView: false,
-    rawText: text,
-    clarification: `Heard "${text}". Could not recognize a rating between 1 and 10, or 'No view'.`,
-  };
 }
 
 export const RatingWizard: React.FC<RatingWizardProps> = ({
@@ -151,14 +63,39 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Voice Guidance State
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  // Input Mode: "text" (tap buttons) vs "voice" (speak answers)
+  const [inputMode, setInputMode] = useState<"text" | "voice">("text");
+  const [voiceStarted, setVoiceStarted] = useState(false);
+
+  // Voice State Management
+  const [voiceStatus, setVoiceStatus] = useState<"idle" | "listening" | "confirming" | "paused" | "error">("idle");
+  const [interimTranscript, setInterimTranscript] = useState<string>("");
   const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const stopListeningRef = useRef<(() => void) | null>(null);
+  const [readAloud, setReadAloud] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+
+  // Concurrency & Lifecycle Protection Refs
+  const controllerRef = useRef<SpeechSessionController | null>(null);
+  const advanceTimerRef = useRef<any>(null);
+  const isAdvancingRef = useRef<boolean>(false);
   const isSavingRef = useRef<boolean>(false);
+  const currentQuestionIndexRef = useRef<number>(0);
+  const voiceStartedRef = useRef<boolean>(false);
+  const readAloudRef = useRef<boolean>(false);
+
+  // Sync refs with state
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    voiceStartedRef.current = voiceStarted;
+  }, [voiceStarted]);
+
+  useEffect(() => {
+    readAloudRef.current = readAloud;
+  }, [readAloud]);
 
   // Load 25 parameters & restored session answers
   useEffect(() => {
@@ -200,19 +137,48 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     return () => {
       mounted = false;
       stopSpeaking();
-      if (stopListeningRef.current) {
-        stopListeningRef.current();
-        stopListeningRef.current = null;
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+      }
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
       }
     };
   }, [session.id, college.college_id]);
 
+  // Clean teardown on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+      }
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Saves an answer through the backend API
   const handleAnswerChange = async (score: number | null, isNoView: boolean): Promise<boolean> => {
     const currentParam = parameters[currentIndex];
     if (!currentParam || savingAnswer || isSavingRef.current) return false;
 
     isSavingRef.current = true;
     setSavingAnswer(true);
+
+    // Cancel pending voice progression if user manually taps
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    isAdvancingRef.current = false;
 
     setAnswers((prev) => ({
       ...prev,
@@ -240,156 +206,300 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     }
   };
 
-  // Helper to start listening for an answer
-  const listenForAnswer = useCallback(() => {
-    if (!isSpeechRecognitionSupported()) {
-      setVoiceError("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+  // Helper to start speech recognition for a specific question index
+  const startListeningForQuestion = useCallback(
+    (targetIndex: number) => {
+      if (!isSpeechRecognitionSupported()) {
+        setVoiceError(
+          "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari, or switch to text mode."
+        );
+        setVoiceStatus("error");
+        return;
+      }
+
+      // Teardown any existing controller cleanly
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = null;
+      }
+
+      isAdvancingRef.current = false;
+      setVoiceError(null);
+      setVoiceStatus("listening");
+      setInterimTranscript("");
+
+      const param = parameters[targetIndex];
+      if (!param) return;
+
+      const controller = startSpeechSession({
+        lang: "en-IN",
+        silenceTimeoutMs: 3500,
+        autoStopOnSilence: true,
+        onStart: () => {
+          setVoiceStatus("listening");
+          setVoiceError(null);
+        },
+        onInterimTranscript: (combined: string) => {
+          if (isAdvancingRef.current) return;
+          setInterimTranscript(combined);
+        },
+        onFinalTranscript: async (finalText: string) => {
+          if (isAdvancingRef.current) return;
+          if (currentQuestionIndexRef.current !== targetIndex) return;
+
+          setInterimTranscript(finalText);
+          const parsed: ParsedVoiceRating = parseSpokenRating(finalText);
+
+          // 1. Navigation Commands
+          if (parsed.isNavigation === "previous") {
+            controller.abort();
+            controllerRef.current = null;
+            if (targetIndex > 0) {
+              setVoiceFeedback("Going back to previous question...");
+              if (readAloudRef.current) {
+                speakText("Going back to previous question.");
+              }
+              setCurrentIndex(targetIndex - 1);
+            } else {
+              setVoiceFeedback("Already at the first question.");
+            }
+            return;
+          }
+
+          if (parsed.isNavigation === "repeat") {
+            controller.abort();
+            controllerRef.current = null;
+            announceOrPromptQuestion(targetIndex);
+            return;
+          }
+
+          if (parsed.isNavigation === "review") {
+            controller.abort();
+            controllerRef.current = null;
+            setVoiceStatus("idle");
+            setViewState("review");
+            return;
+          }
+
+          if (parsed.isNavigation === "next") {
+            controller.abort();
+            controllerRef.current = null;
+            if (targetIndex < parameters.length - 1) {
+              setCurrentIndex(targetIndex + 1);
+            } else {
+              setViewState("review");
+            }
+            return;
+          }
+
+          // 2. Invalid or Ambiguous Speech: Do NOT advance, do NOT store answer!
+          if (!parsed.valid) {
+            const clarifyMsg =
+              parsed.clarification ||
+              "I didn't catch a rating. Say a number from 1 to 10, or say 'No view'.";
+            setVoiceFeedback(clarifyMsg);
+
+            if (readAloudRef.current) {
+              controller.abort();
+              controllerRef.current = null;
+              setIsSpeaking(true);
+              speakText(clarifyMsg, {
+                onEnd: () => {
+                  setIsSpeaking(false);
+                  startListeningForQuestion(targetIndex);
+                },
+                onError: () => {
+                  setIsSpeaking(false);
+                  startListeningForQuestion(targetIndex);
+                },
+              });
+            }
+            return;
+          }
+
+          // 3. Valid Rating Parsed: Lock against duplicate advancing
+          isAdvancingRef.current = true;
+          controller.stop();
+          controllerRef.current = null;
+          setVoiceStatus("confirming");
+
+          const score = parsed.score;
+          const isNoView = parsed.isNoView;
+          const feedbackMsg = isNoView
+            ? 'Heard "No view" — selected'
+            : `Heard ${score} — selected`;
+
+          setVoiceFeedback(feedbackMsg);
+
+          // Immediately update local answers so ParameterInput highlights the selected button!
+          setAnswers((prev) => ({
+            ...prev,
+            [param.parameter_id]: { score, isNoView },
+          }));
+
+          // Persist answer in background to existing API
+          api
+            .saveAnswer(session.id, param.parameter_id, {
+              score,
+              is_no_view: isNoView,
+            })
+            .catch((err) => {
+              console.error("Failed to save voice answer:", err);
+            });
+
+          // Visual confirmation delay (~900ms) before advancing to next question
+          advanceTimerRef.current = setTimeout(() => {
+            isAdvancingRef.current = false;
+            advanceTimerRef.current = null;
+
+            if (targetIndex < parameters.length - 1) {
+              setCurrentIndex(targetIndex + 1);
+            } else {
+              setVoiceStatus("idle");
+              setViewState("review");
+            }
+          }, 900);
+        },
+        onSilenceTimeout: () => {
+          if (isAdvancingRef.current) return;
+          setVoiceStatus("paused");
+          setVoiceFeedback("Listening paused due to silence. Tap 'Resume' to continue.");
+        },
+        onError: (errMsg: string) => {
+          if (isAdvancingRef.current) return;
+          setVoiceStatus("error");
+          setVoiceError(errMsg);
+        },
+        onEnd: () => {
+          if (!isAdvancingRef.current && voiceStartedRef.current) {
+            setVoiceStatus((curr) => (curr === "confirming" ? curr : "paused"));
+          }
+        },
+      });
+
+      controllerRef.current = controller;
+    },
+    [parameters, session.id]
+  );
+
+  // Announces question if readAloud is enabled, then begins listening
+  const announceOrPromptQuestion = useCallback(
+    (targetIndex: number) => {
+      const param = parameters[targetIndex];
+      if (!param) return;
+
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+
+      if (readAloudRef.current && isSpeechSynthesisSupported()) {
+        setIsSpeaking(true);
+        setVoiceStatus("idle");
+        const narration = `Question ${targetIndex + 1} of 25. ${param.parameter_name}. Say a rating from 1 to 10, or say No view.`;
+        speakText(narration, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => {
+            setIsSpeaking(false);
+            startListeningForQuestion(targetIndex);
+          },
+          onError: () => {
+            setIsSpeaking(false);
+            startListeningForQuestion(targetIndex);
+          },
+        });
+      } else {
+        startListeningForQuestion(targetIndex);
+      }
+    },
+    [parameters, startListeningForQuestion]
+  );
+
+  // Automatically start voice listening when question changes in voice mode
+  useEffect(() => {
+    if (
+      inputMode !== "voice" ||
+      !voiceStarted ||
+      viewState !== "questions" ||
+      parameters.length === 0
+    ) {
       return;
     }
 
-    if (stopListeningRef.current) {
-      stopListeningRef.current();
-      stopListeningRef.current = null;
-    }
-
-    setVoiceError(null);
-    setIsListening(true);
-
-    const stopFn = startSpeechRecognition({
-      onStart: () => {
-        setIsListening(true);
-        setVoiceError(null);
-      },
-      onTranscript: async (spokenText: string, isFinal: boolean) => {
-        if (!isFinal || isSavingRef.current) return;
-
-        const parsed = parseSpokenRating(spokenText);
-
-        if (parsed.isNavigation === "previous") {
-          setVoiceFeedback("Navigating to previous question...");
-          speakText("Going back to previous question.");
-          setCurrentIndex((prev) => Math.max(prev - 1, 0));
-          return;
-        }
-
-        if (parsed.isNavigation === "next") {
-          setVoiceFeedback("Navigating to next question...");
-          setCurrentIndex((prev) => Math.min(prev + 1, parameters.length - 1));
-          return;
-        }
-
-        if (parsed.isNavigation === "repeat") {
-          announceCurrentQuestion();
-          return;
-        }
-
-        if (parsed.isNavigation === "review") {
-          setViewState("review");
-          return;
-        }
-
-        if (!parsed.valid) {
-          const msg = parsed.clarification || "Please say a rating from 1 to 10, or say 'No view'.";
-          setVoiceFeedback(msg);
-          speakText(msg, {
-            onEnd: () => {
-              listenForAnswer();
-            },
-          });
-          return;
-        }
-
-        // Valid rating parsed: stop listening before saving to prevent duplicate captures
-        if (stopListeningRef.current) {
-          stopListeningRef.current();
-          stopListeningRef.current = null;
-        }
-        setIsListening(false);
-
-        const savedDesc = parsed.isNoView ? 'Marked as "No view"' : `Saved rating as ${parsed.score} out of 10`;
-        setVoiceFeedback(`${savedDesc}. Proceeding...`);
-
-        const success = await handleAnswerChange(parsed.score, parsed.isNoView);
-        if (success) {
-          speakText(savedDesc);
-        }
-      },
-      onError: (errMsg: string) => {
-        setIsListening(false);
-        stopListeningRef.current = null;
-        setVoiceError(errMsg);
-      },
-      onEnd: () => {
-        setIsListening(false);
-        stopListeningRef.current = null;
-      },
-    });
-
-    stopListeningRef.current = stopFn;
-  }, [currentIndex, parameters]);
-
-  // Announces the active question prompt via speech synthesis
-  const announceCurrentQuestion = useCallback(() => {
-    const currentParam = parameters[currentIndex];
-    if (!currentParam) return;
-
-    if (stopListeningRef.current) {
-      stopListeningRef.current();
-      stopListeningRef.current = null;
-    }
-    setIsListening(false);
-    setIsSpeaking(true);
-
-    const questionSpeech = `Question ${currentIndex + 1} of 25. ${currentParam.parameter_name}. Say a rating from 1 to 10, or say No view.`;
-    speakText(questionSpeech, {
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => {
-        setIsSpeaking(false);
-        listenForAnswer();
-      },
-      onError: () => {
-        setIsSpeaking(false);
-        listenForAnswer();
-      },
-    });
-  }, [currentIndex, parameters, listenForAnswer]);
-
-  // When voice mode is active and current question changes, announce it
-  useEffect(() => {
-    if (!isVoiceMode || viewState !== "questions" || parameters.length === 0) return;
-    announceCurrentQuestion();
+    announceOrPromptQuestion(currentIndex);
 
     return () => {
-      stopSpeaking();
-      if (stopListeningRef.current) {
-        stopListeningRef.current();
-        stopListeningRef.current = null;
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = null;
       }
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+      stopSpeaking();
     };
-  }, [currentIndex, isVoiceMode, viewState, parameters.length]);
+  }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion]);
 
-  const toggleVoiceMode = () => {
-    if (isVoiceMode) {
-      // Turn voice mode off
+  // Mode Switcher: Safely switches between Text and Voice while preserving answers
+  const handleSwitchMode = (mode: "text" | "voice") => {
+    if (mode === inputMode) return;
+
+    if (mode === "text") {
       stopSpeaking();
-      if (stopListeningRef.current) {
-        stopListeningRef.current();
-        stopListeningRef.current = null;
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = null;
       }
-      setIsListening(false);
-      setIsSpeaking(false);
-      setIsVoiceMode(false);
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+      isAdvancingRef.current = false;
+      setInputMode("text");
+      setVoiceStatus("idle");
       setVoiceFeedback(null);
       setVoiceError(null);
     } else {
       if (!isSpeechRecognitionSupported()) {
-        setVoiceError("Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.");
-        return;
+        setVoiceError(
+          "Voice input is not supported in this browser. Please use Chrome, Edge, or Safari."
+        );
       }
-      setIsVoiceMode(true);
-      setVoiceError(null);
-      setVoiceFeedback("Voice guidance enabled. Reading question...");
+      setInputMode("voice");
     }
+  };
+
+  // Explicit user action to initiate voice session and browser permissions flow
+  const handleStartVoiceRating = () => {
+    if (!isSpeechRecognitionSupported()) {
+      setVoiceError(
+        "Voice input is not supported in this browser. Please use Chrome, Edge, or Safari."
+      );
+      return;
+    }
+    setVoiceStarted(true);
+    setVoiceError(null);
+    setVoiceFeedback("Starting voice rating...");
+  };
+
+  // Resume listening after silence pause or manual stop
+  const handleResumeListening = () => {
+    startListeningForQuestion(currentIndex);
+  };
+
+  // Pause listening
+  const handlePauseListening = () => {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    setVoiceStatus("paused");
+    setVoiceFeedback("Listening paused. Tap 'Resume' to continue.");
   };
 
   const handleFinalSubmit = async () => {
@@ -479,9 +589,10 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
   return (
     <div className="py-5 sm:py-8 px-3.5 sm:px-6 max-w-3xl mx-auto font-sans">
-      {/* Top Bar: Progress and Exit */}
-      <div className="mb-4 sm:mb-6 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+      {/* Top Bar: Navigation & Review CTA */}
+      <div className="mb-3 sm:mb-4 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
         <button
+          type="button"
           onClick={onExit}
           className="text-xs font-semibold text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1.5 min-h-[36px]"
         >
@@ -489,43 +600,137 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           <span>Exit Session</span>
         </button>
 
-        <div className="flex items-center gap-2 flex-wrap justify-between xs:justify-end">
-          {isSpeechRecognitionSupported() && (
-            <button
-              type="button"
-              onClick={toggleVoiceMode}
-              title={isVoiceMode ? "Disable Voice Guidance" : "Enable Voice Guided Rating"}
-              className={`text-xs py-1.5 px-3 min-h-[36px] rounded flex items-center gap-1.5 font-medium border transition-colors ${
-                isVoiceMode
-                  ? "bg-olive text-paper border-olive shadow-sm"
-                  : "bg-paper text-charcoal-muted hover:text-charcoal border-warm-grey hover:border-olive"
-              }`}
-            >
-              {isVoiceMode ? (
-                <Mic className="w-3.5 h-3.5 text-paper animate-pulse" />
-              ) : (
-                <MicOff className="w-3.5 h-3.5" />
-              )}
-              <span>{isVoiceMode ? "Voice Active" : "Voice Mode"}</span>
-            </button>
+        <button
+          type="button"
+          onClick={() => setViewState("review")}
+          className="btn-secondary text-xs py-1.5 px-3 min-h-[36px] flex items-center gap-1.5 font-medium self-start xs:self-auto"
+        >
+          <ListChecks className="w-4 h-4 text-olive" />
+          <span>Review ({answeredCount}/25)</span>
+        </button>
+      </div>
+
+      {/* SECTION 4: Dual Input Mode Selector (Text vs Voice) */}
+      <div className="mb-5 sm:mb-6 p-1 bg-warm-grey-light/80 rounded-lg border border-warm-grey grid grid-cols-2 gap-1.5">
+        <button
+          type="button"
+          id="mode-selector-text"
+          onClick={() => handleSwitchMode("text")}
+          className={`min-h-[42px] py-2 px-3 rounded-md font-sans text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+            inputMode === "text"
+              ? "bg-card text-charcoal shadow-sm border border-warm-grey ring-1 ring-charcoal/10"
+              : "text-charcoal-muted hover:text-charcoal"
+          }`}
+        >
+          <span>✍️ Rate with text</span>
+          <span className="text-[10px] hidden sm:inline text-charcoal-muted font-normal">
+            (Tap buttons)
+          </span>
+        </button>
+
+        <button
+          type="button"
+          id="mode-selector-voice"
+          onClick={() => handleSwitchMode("voice")}
+          className={`min-h-[42px] py-2 px-3 rounded-md font-sans text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+            inputMode === "voice"
+              ? "bg-olive text-paper shadow-sm ring-1 ring-olive/40 font-bold"
+              : "text-charcoal-muted hover:text-charcoal"
+          }`}
+        >
+          <Mic className={`w-3.5 h-3.5 ${inputMode === "voice" ? "text-paper" : "text-olive"}`} />
+          <span>Rate with voice</span>
+          <span className="text-[10px] hidden sm:inline opacity-85 font-normal">
+            (Speak numbers)
+          </span>
+        </button>
+      </div>
+
+      {/* Voice Mode Onboarding / Start Card (Before Mic starts) */}
+      {inputMode === "voice" && !voiceStarted && (
+        <div className="editorial-card p-5 sm:p-7 bg-card border-warm-grey shadow-card mb-6 sm:mb-8 animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 mb-4 text-center sm:text-left">
+            <div className="w-11 h-11 rounded-full bg-olive-light flex items-center justify-center shrink-0 border border-olive/30">
+              <Mic className="w-5 h-5 text-olive" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-charcoal">
+                Voice-Controlled Rating
+              </h3>
+              <p className="text-xs sm:text-sm text-charcoal-muted mt-1 leading-relaxed">
+                Say a number from 1 to 10 to answer each question. Say 'No view' if you don't have enough experience to rate this category.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-warm-grey-light/60 border border-warm-grey rounded-lg p-3 sm:p-4 mb-4 text-xs text-charcoal space-y-2">
+            <span className="font-semibold text-charcoal block">Spoken commands supported:</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-charcoal-muted text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-olive font-bold">•</span>
+                <span>Numbers <strong>1 to 10</strong> or words <em>"one"</em> to <em>"ten"</em></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-olive font-bold">•</span>
+                <span><strong>"No view"</strong>, <strong>"pass"</strong>, or <strong>"skip"</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-olive font-bold">•</span>
+                <span><strong>"Previous"</strong> or <strong>"go back"</strong> to undo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-olive font-bold">•</span>
+                <span><strong>"Repeat"</strong> to hear the question again</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Optional Narration Toggle */}
+          {isSpeechSynthesisSupported() && (
+            <label className="flex items-center gap-2.5 mb-5 cursor-pointer select-none text-xs text-charcoal">
+              <input
+                type="checkbox"
+                id="voice-read-aloud-toggle"
+                checked={readAloud}
+                onChange={(e) => {
+                  setReadAloud(e.target.checked);
+                  readAloudRef.current = e.target.checked;
+                }}
+                className="rounded border-warm-grey text-olive focus:ring-olive w-4 h-4 cursor-pointer"
+              />
+              <span className="font-medium">
+                Read questions aloud (narrate criteria before listening)
+              </span>
+            </label>
           )}
 
-          <button
-            onClick={() => setViewState("review")}
-            className="btn-secondary text-xs py-1.5 px-3 min-h-[36px] flex items-center gap-1.5 font-medium"
-          >
-            <ListChecks className="w-4 h-4 text-olive" />
-            <span>Review ({answeredCount}/25)</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <button
+              type="button"
+              id="start-voice-rating-btn"
+              onClick={handleStartVoiceRating}
+              className="btn-primary min-h-[44px] w-full sm:w-auto px-6 py-2.5 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Mic className="w-4 h-4" />
+              <span>Start voice rating</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchMode("text")}
+              className="btn-secondary min-h-[44px] w-full sm:w-auto px-4 py-2.5 text-xs font-medium text-charcoal-muted hover:text-charcoal"
+            >
+              <span>Stay with text mode</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Progress Indicator Bar */}
       <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded bg-card border border-warm-grey shadow-subtle">
         <div className="flex flex-col xs:flex-row xs:items-center justify-between text-xs text-charcoal-muted mb-2 font-mono gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-charcoal">
-              Question #{currentIndex + 1}
+              Question #{currentIndex + 1} of 25
             </span>
             <span>•</span>
             <span className="uppercase text-[11px] text-olive font-semibold">
@@ -573,7 +778,9 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         <div className="mb-6 p-3 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs">
           {error}
         </div>
-      )}      {/* Active Question Card */}
+      )}
+
+      {/* Active Question Card */}
       {currentParam && (
         <div className="editorial-card p-4 sm:p-8 md:p-10 bg-card mb-6 sm:mb-8 shadow-card border-warm-grey">
           {/* Category Header */}
@@ -591,60 +798,112 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
             </span>
           </div>
 
-          {/* Voice Guidance Interactive Card */}
-          {isVoiceMode && (
-            <div className="mb-6 p-3.5 sm:p-4 rounded-lg bg-olive-light/60 border border-olive/30 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                    isListening
-                      ? "bg-emerald-600 text-white animate-pulse"
-                      : isSpeaking
-                      ? "bg-olive text-white animate-pulse"
-                      : "bg-card text-olive border border-olive/30"
-                  }`}
-                >
-                  {isSpeaking ? (
-                    <Volume2 className="w-4 h-4" />
-                  ) : isListening ? (
-                    <Mic className="w-4 h-4" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-charcoal flex items-center gap-1.5">
-                    <span>
-                      {isSpeaking
-                        ? "Reading question aloud..."
-                        : isListening
-                        ? "Listening for your rating (speak 1-10 or 'No view')..."
-                        : "Voice Mode Ready"}
-                    </span>
+          {/* Active Voice Control & Live Feedback Panel */}
+          {inputMode === "voice" && voiceStarted && (
+            <div className="mb-6 p-3.5 sm:p-4 rounded-lg bg-warm-grey-light/70 border border-warm-grey shadow-subtle flex flex-col gap-3 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                      voiceStatus === "listening"
+                        ? "bg-emerald-600 text-white animate-pulse"
+                        : voiceStatus === "confirming"
+                        ? "bg-olive text-white scale-105"
+                        : isSpeaking
+                        ? "bg-olive text-white animate-pulse"
+                        : voiceStatus === "paused"
+                        ? "bg-amber-600 text-white"
+                        : voiceStatus === "error"
+                        ? "bg-rose-600 text-white"
+                        : "bg-warm-grey text-charcoal"
+                    }`}
+                  >
+                    {isSpeaking ? (
+                      <Volume2 className="w-4 h-4" />
+                    ) : voiceStatus === "listening" ? (
+                      <Mic className="w-4 h-4 animate-bounce" />
+                    ) : voiceStatus === "confirming" ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : voiceStatus === "paused" ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <MicOff className="w-4 h-4" />
+                    )}
                   </div>
-                  <p className="text-[11px] text-charcoal-muted mt-0.5">
-                    {voiceFeedback || "Speak a number from 1 to 10, or say 'No view'. Say 'Previous' to go back, or 'Repeat' to hear again."}
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={announceCurrentQuestion}
-                  title="Repeat question audio"
-                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal hover:border-olive flex items-center gap-1 min-h-[32px]"
-                >
-                  <RotateCcw className="w-3 h-3 text-olive" />
-                  <span>Repeat</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleVoiceMode}
-                  className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal hover:border-rose-400 min-h-[32px]"
-                >
-                  Turn Off
-                </button>
+                  <div>
+                    <div className="text-xs font-semibold text-charcoal flex items-center gap-2 flex-wrap">
+                      <span>
+                        {isSpeaking
+                          ? "Reading question aloud..."
+                          : voiceStatus === "listening"
+                          ? "Listening for your rating (say 1-10 or 'No view')..."
+                          : voiceStatus === "confirming"
+                          ? "Answer confirmed — advancing..."
+                          : voiceStatus === "paused"
+                          ? "Listening paused due to silence"
+                          : "Voice input ready"}
+                      </span>
+                    </div>
+
+                    {/* Live Transcript / Feedback line */}
+                    <p className="text-[11px] text-charcoal-muted mt-0.5 font-sans">
+                      {interimTranscript ? (
+                        <span>
+                          <strong className="text-charcoal font-semibold">Heard: </strong>
+                          <span className="italic text-olive font-medium">"{interimTranscript}"</span>
+                        </span>
+                      ) : voiceFeedback ? (
+                        <span>{voiceFeedback}</span>
+                      ) : (
+                        <span>Say a number from 1 to 10, or say 'No view'.</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Voice Action Controls */}
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
+                  {voiceStatus === "paused" && (
+                    <button
+                      type="button"
+                      onClick={handleResumeListening}
+                      className="px-3 py-1.5 rounded text-xs font-semibold bg-olive text-white hover:bg-olive-dark flex items-center gap-1.5 min-h-[34px] shadow-sm"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      <span>Resume</span>
+                    </button>
+                  )}
+
+                  {voiceStatus === "listening" && (
+                    <button
+                      type="button"
+                      onClick={handlePauseListening}
+                      className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal min-h-[32px] flex items-center gap-1"
+                    >
+                      <Pause className="w-3 h-3" />
+                      <span>Pause</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => announceOrPromptQuestion(currentIndex)}
+                    title="Repeat question audio"
+                    className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal hover:border-olive flex items-center gap-1 min-h-[32px]"
+                  >
+                    <RotateCcw className="w-3 h-3 text-olive" />
+                    <span>Repeat</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode("text")}
+                    className="px-2.5 py-1.5 rounded text-[11px] font-medium bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal hover:border-rose-300 min-h-[32px]"
+                  >
+                    <span>Use Text</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -687,7 +946,13 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
             <button
               type="button"
               disabled={currentIndex === 0}
-              onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
+              onClick={() => {
+                if (advanceTimerRef.current) {
+                  clearTimeout(advanceTimerRef.current);
+                  advanceTimerRef.current = null;
+                }
+                setCurrentIndex((prev) => Math.max(prev - 1, 0));
+              }}
               className="btn-secondary min-h-[44px] text-xs py-2 px-4 disabled:opacity-30 flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -697,7 +962,13 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
             {currentIndex < parameters.length - 1 ? (
               <button
                 type="button"
-                onClick={() => setCurrentIndex((prev) => Math.min(prev + 1, parameters.length - 1))}
+                onClick={() => {
+                  if (advanceTimerRef.current) {
+                    clearTimeout(advanceTimerRef.current);
+                    advanceTimerRef.current = null;
+                  }
+                  setCurrentIndex((prev) => Math.min(prev + 1, parameters.length - 1));
+                }}
                 className="btn-secondary min-h-[44px] text-xs py-2 px-5 flex items-center gap-1.5 font-medium"
               >
                 <span>Next</span>

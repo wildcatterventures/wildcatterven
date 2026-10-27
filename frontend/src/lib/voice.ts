@@ -16,7 +16,18 @@ export function isSpeechSynthesisSupported(): boolean {
 }
 
 /**
- * Friendly error messages for common speech recognition failures.
+ * Explicit speech recognition states for clear UI state machines.
+ */
+export type SpeechState =
+  | "idle"
+  | "starting"
+  | "listening"
+  | "processing"
+  | "submitting"
+  | "error";
+
+/**
+ * Friendly, actionable error messages for browser speech recognition errors.
  */
 export function getSpeechRecognitionErrorMessage(error: any): string {
   const errCode = typeof error === "string" ? error : error?.error || error?.message || "";
@@ -37,95 +48,211 @@ export function getSpeechRecognitionErrorMessage(error: any): string {
     case "language-not-supported":
       return "Speech recognition language is not supported. Please type your query.";
     default:
-      return errCode ? `Voice error (${errCode}). Please type your query.` : "Could not capture voice audio. Please type your query.";
+      return errCode
+        ? `Voice error (${errCode}). Please type your query.`
+        : "Could not capture voice audio. Please type your query.";
   }
 }
 
-export interface SpeechRecognitionOptions {
-  onTranscript: (text: string, isFinal: boolean) => void;
+export interface SpeechSessionOptions {
+  /**
+   * Recognition locale (defaults to en-IN).
+   */
+  lang?: string;
+  /**
+   * Silence inactivity timeout in milliseconds (defaults to 3500ms).
+   */
+  silenceTimeoutMs?: number;
+  /**
+   * Whether to automatically stop and finalize when silence timeout fires (default true).
+   */
+  autoStopOnSilence?: boolean;
+  /**
+   * Invoked on state machine transitions.
+   */
+  onStateChange?: (state: SpeechState) => void;
+  /**
+   * Invoked on every interim or final update with the full combined transcript.
+   */
+  onInterimTranscript?: (combinedTranscript: string, isFinal: boolean) => void;
+  /**
+   * Invoked once when speech recognition finalizes a complete statement.
+   */
+  onFinalTranscript?: (finalTranscript: string) => void;
+  /**
+   * Invoked when the 3.5s silence timeout fires after speech.
+   */
+  onSilenceTimeout?: (finalTranscript: string) => void;
+  /**
+   * Invoked on error.
+   */
   onError?: (errorMessage: string, rawError: any) => void;
+  /**
+   * Invoked when microphone hardware opens and speech engine starts.
+   */
   onStart?: () => void;
+  /**
+   * Invoked when speech engine terminates.
+   */
   onEnd?: () => void;
 }
 
-let activeRecognitionInstance: any = null;
+export interface SpeechSessionController {
+  sessionId: number;
+  stop: () => void;
+  abort: () => void;
+  getState: () => SpeechState;
+}
 
-export function startSpeechRecognition(
-  optionsOrTranscript:
-    | SpeechRecognitionOptions
-    | ((text: string, isFinal: boolean) => void),
-  legacyOnError?: (error: any) => void,
-  legacyOnEnd?: () => void
-): () => void {
-  // Support both legacy (callback arguments) and new options object format
-  const options: SpeechRecognitionOptions =
-    typeof optionsOrTranscript === "function"
-      ? {
-          onTranscript: optionsOrTranscript,
-          onError: (msg, err) => legacyOnError?.(err || msg),
-          onEnd: legacyOnEnd,
-        }
-      : optionsOrTranscript;
+// Global active session tracker to ensure no competing microphone instances
+let globalSessionCounter = 0;
+let globalActiveSession: {
+  id: number;
+  recognition: any;
+  silenceTimer: any;
+  state: SpeechState;
+  finalTranscript: string;
+  latestCombined: string;
+  userAborted: boolean;
+  hasStarted: boolean;
+  silenceFired: boolean;
+} | null = null;
 
-  if (!isSpeechRecognitionSupported()) {
-    options.onError?.(
-      "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.",
-      new Error("UNSUPPORTED_BROWSER")
-    );
-    return () => {};
-  }
+/**
+ * Starts a reliable, tracked speech recognition session with silence detection,
+ * interim result streaming, and race-condition protection.
+ */
+export function startSpeechSession(options: SpeechSessionOptions): SpeechSessionController {
+  const sessionId = ++globalSessionCounter;
+  const silenceTimeoutMs = options.silenceTimeoutMs ?? 3500;
+  const autoStopOnSilence = options.autoStopOnSilence ?? true;
+  const preferredLang = options.lang || "en-IN";
 
-  // Teardown any existing active instance cleanly to prevent duplicate events or memory leaks
-  if (activeRecognitionInstance) {
+  // Teardown any currently active instance cleanly
+  if (globalActiveSession) {
     try {
-      activeRecognitionInstance.onstart = null;
-      activeRecognitionInstance.onresult = null;
-      activeRecognitionInstance.onerror = null;
-      activeRecognitionInstance.onend = null;
-      activeRecognitionInstance.abort();
+      globalActiveSession.userAborted = true;
+      if (globalActiveSession.silenceTimer) {
+        clearTimeout(globalActiveSession.silenceTimer);
+      }
+      globalActiveSession.recognition.onstart = null;
+      globalActiveSession.recognition.onspeechstart = null;
+      globalActiveSession.recognition.onsoundstart = null;
+      globalActiveSession.recognition.onresult = null;
+      globalActiveSession.recognition.onerror = null;
+      globalActiveSession.recognition.onend = null;
+      globalActiveSession.recognition.abort();
     } catch {
       // ignore
     }
-    activeRecognitionInstance = null;
+    globalActiveSession = null;
+  }
+
+  const setState = (newState: SpeechState) => {
+    if (globalActiveSession && globalActiveSession.id === sessionId) {
+      globalActiveSession.state = newState;
+    }
+    options.onStateChange?.(newState);
+  };
+
+  if (!isSpeechRecognitionSupported()) {
+    const errorMsg = "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.";
+    options.onError?.(errorMsg, new Error("UNSUPPORTED_BROWSER"));
+    setState("error");
+    return {
+      sessionId,
+      stop: () => {},
+      abort: () => {},
+      getState: () => "error",
+    };
   }
 
   const win = window as IWindow;
   const SpeechRecognitionClass = win.SpeechRecognition || win.webkitSpeechRecognition;
   const recognition = new SpeechRecognitionClass();
-  activeRecognitionInstance = recognition;
 
-  // Use continuous listening with interim results so phrases are captured naturally
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
-
-  // Determine user's preferred language, falling back to browser default or en-IN
-  let preferredLang = "en-IN";
-  if (typeof navigator !== "undefined") {
-    if (navigator.language) {
-      preferredLang = navigator.language;
-    } else if (navigator.languages && navigator.languages.length > 0) {
-      preferredLang = navigator.languages[0];
-    }
-  }
   recognition.lang = preferredLang;
 
-  let userStopped = false;
-  let hasStarted = false;
-  let latestFullTranscript = "";
+  const sessionRecord = {
+    id: sessionId,
+    recognition,
+    silenceTimer: null as any,
+    state: "starting" as SpeechState,
+    finalTranscript: "",
+    latestCombined: "",
+    userAborted: false,
+    hasStarted: false,
+    silenceFired: false,
+  };
+
+  globalActiveSession = sessionRecord;
+  setState("starting");
+
+  const clearSilenceTimer = () => {
+    if (sessionRecord.silenceTimer) {
+      clearTimeout(sessionRecord.silenceTimer);
+      sessionRecord.silenceTimer = null;
+    }
+  };
+
+  const resetSilenceTimer = () => {
+    clearSilenceTimer();
+    if (!autoStopOnSilence || sessionRecord.userAborted || sessionRecord.silenceFired) return;
+
+    sessionRecord.silenceTimer = setTimeout(() => {
+      if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted || sessionRecord.silenceFired) {
+        return;
+      }
+      sessionRecord.silenceFired = true;
+      setState("processing");
+
+      // Extract the best available transcript before stopping
+      const finalSubmission = (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
+
+      try {
+        if (sessionRecord.hasStarted) {
+          recognition.stop();
+        } else {
+          recognition.abort();
+        }
+      } catch {
+        // ignore
+      }
+
+      options.onSilenceTimeout?.(finalSubmission);
+    }, silenceTimeoutMs);
+  };
 
   recognition.onstart = () => {
-    hasStarted = true;
+    if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+    sessionRecord.hasStarted = true;
+    setState("listening");
     options.onStart?.();
+    resetSilenceTimer();
+  };
+
+  recognition.onspeechstart = () => {
+    if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+    resetSilenceTimer();
+  };
+
+  recognition.onsoundstart = () => {
+    if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+    resetSilenceTimer();
   };
 
   recognition.onresult = (event: any) => {
-    if (userStopped) return;
+    if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+
+    // Reset silence timer because user is actively speaking and results are streaming
+    resetSilenceTimer();
 
     let finalParts = "";
     let interimParts = "";
 
-    // Iterate through all results to build the full transcript without dropping prior phrases
     for (let i = 0; i < event.results.length; ++i) {
       const res = event.results[i];
       if (!res || !res[0]) continue;
@@ -138,27 +265,51 @@ export function startSpeechRecognition(
     }
 
     const currentCombined = (finalParts + (finalParts && interimParts ? " " : "") + interimParts).trim();
-    if (currentCombined) {
-      latestFullTranscript = currentCombined;
-      const isComplete = !interimParts && Boolean(finalParts);
-      options.onTranscript(currentCombined, isComplete);
+    sessionRecord.latestCombined = currentCombined;
+
+    if (finalParts) {
+      sessionRecord.finalTranscript = finalParts.trim();
     }
+
+    const isComplete = !interimParts && Boolean(finalParts);
+    options.onInterimTranscript?.(currentCombined, isComplete);
   };
 
   recognition.onerror = (event: any) => {
+    if (globalActiveSession?.id !== sessionId) return;
+    clearSilenceTimer();
+
     const errCode = event.error || "";
-    // If user stopped listening manually, do not show error banner
-    if (errCode === "aborted" && userStopped) {
+    if (errCode === "aborted" && sessionRecord.userAborted) {
+      setState("idle");
       return;
     }
+
+    // Ignore no-speech if we already captured a transcript and silence fired
+    if (errCode === "no-speech" && (sessionRecord.finalTranscript || sessionRecord.silenceFired)) {
+      return;
+    }
+
     const errorMsg = getSpeechRecognitionErrorMessage(errCode);
+    setState("error");
     options.onError?.(errorMsg, event);
   };
 
   recognition.onend = () => {
-    activeRecognitionInstance = null;
-    if (latestFullTranscript) {
-      options.onTranscript(latestFullTranscript, true);
+    if (globalActiveSession?.id !== sessionId) return;
+    clearSilenceTimer();
+
+    const finalized = (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
+    if (finalized && !sessionRecord.userAborted) {
+      options.onFinalTranscript?.(finalized);
+    }
+
+    if (globalActiveSession?.id === sessionId) {
+      globalActiveSession = null;
+    }
+
+    if (sessionRecord.state !== "error") {
+      setState("idle");
     }
     options.onEnd?.();
   };
@@ -166,24 +317,87 @@ export function startSpeechRecognition(
   try {
     recognition.start();
   } catch (err) {
-    activeRecognitionInstance = null;
+    clearSilenceTimer();
+    if (globalActiveSession?.id === sessionId) {
+      globalActiveSession = null;
+    }
     const msg = getSpeechRecognitionErrorMessage(err);
+    setState("error");
     options.onError?.(msg, err);
   }
 
-  return () => {
-    userStopped = true;
-    try {
-      if (hasStarted) {
-        recognition.stop();
-      } else {
-        recognition.abort();
+  const controller: SpeechSessionController = {
+    sessionId,
+    stop: () => {
+      if (globalActiveSession?.id !== sessionId) return;
+      clearSilenceTimer();
+      setState("processing");
+      try {
+        if (sessionRecord.hasStarted) {
+          recognition.stop();
+        } else {
+          recognition.abort();
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
-    activeRecognitionInstance = null;
+    },
+    abort: () => {
+      if (globalActiveSession?.id !== sessionId) return;
+      sessionRecord.userAborted = true;
+      clearSilenceTimer();
+      setState("idle");
+      try {
+        recognition.abort();
+      } catch {
+        // ignore
+      }
+      if (globalActiveSession?.id === sessionId) {
+        globalActiveSession = null;
+      }
+    },
+    getState: () => {
+      return sessionRecord.state;
+    },
   };
+
+  return controller;
+}
+
+/**
+ * Backward compatibility wrapper for existing startSpeechRecognition callers.
+ */
+export function startSpeechRecognition(
+  optionsOrTranscript:
+    | {
+        onTranscript: (text: string, isFinal: boolean) => void;
+        onError?: (errorMessage: string, rawError: any) => void;
+        onStart?: () => void;
+        onEnd?: () => void;
+      }
+    | ((text: string, isFinal: boolean) => void),
+  legacyOnError?: (error: any) => void,
+  legacyOnEnd?: () => void
+): () => void {
+  const options =
+    typeof optionsOrTranscript === "function"
+      ? {
+          onTranscript: optionsOrTranscript,
+          onError: (msg: string, err: any) => legacyOnError?.(err || msg),
+          onEnd: legacyOnEnd,
+        }
+      : optionsOrTranscript;
+
+  const controller = startSpeechSession({
+    autoStopOnSilence: false,
+    onInterimTranscript: (combined, isFinal) => options.onTranscript(combined, isFinal),
+    onFinalTranscript: (finalText) => options.onTranscript(finalText, true),
+    onError: (msg, err) => options.onError?.(msg, err),
+    onStart: options.onStart,
+    onEnd: options.onEnd,
+  });
+
+  return () => controller.abort();
 }
 
 /**
@@ -193,26 +407,17 @@ export function cleanTextForSpeech(text: string): string {
   if (!text) return "";
 
   let clean = text
-    // Remove markdown links [Label](url) -> Label
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    // Remove bare URLs
     .replace(/https?:\/\/\S+/g, "")
-    // Remove markdown code blocks and inline backticks
     .replace(/```[\s\S]*?```/g, "")
     .replace(/`([^`]+)`/g, "$1")
-    // Remove raw JSON objects or arrays
     .replace(/\{[\s\S]*?\}/g, "")
-    // Remove markdown headers, bold, italics, bullets, blockquotes
     .replace(/[#*_~>]/g, "")
-    // Normalize bullets
     .replace(/^[•\-\*]\s+/gm, "")
-    // Clean fractions/scores like 100/100 -> 100
     .replace(/(\d+)\s*\/\s*10/g, "$1 out of 10")
-    // Clean excessive whitespaces
     .replace(/\s+/g, " ")
     .trim();
 
-  // If text is excessively long (over 450 characters), keep the first 2 concise sentences
   if (clean.length > 450) {
     const sentences = clean.split(/(?<=[.!?])\s+/);
     clean = sentences.slice(0, 3).join(" ");
@@ -239,7 +444,6 @@ export function speakText(
   if (!isSpeechSynthesisSupported()) return;
 
   try {
-    // Cancel any running speech immediately
     stopSpeaking();
 
     const spokenText = cleanTextForSpeech(text);
@@ -254,7 +458,6 @@ export function speakText(
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
-    // Pick an English voice if available
     const voices = window.speechSynthesis.getVoices();
     const englishVoice = voices.find(
       (v) => v.lang.startsWith("en-IN") || v.lang.startsWith("en-US") || v.lang.startsWith("en-GB")

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Search, PlusCircle, AlertCircle, RefreshCw } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, PlusCircle, AlertCircle, RefreshCw, Mic, MicOff, X } from "lucide-react";
 
 import { api } from "../../lib/api";
+import { isSpeechRecognitionSupported, startSpeechSession, SpeechSessionController, SpeechState } from "../../lib/voice";
 import type { CollegeSummary } from "../../types/college";
 import { CollegeCard } from "./CollegeCard";
 
@@ -24,6 +25,22 @@ export const CollegeList: React.FC<CollegeListProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Voice Search State
+  const [speechState, setSpeechState] = useState<SpeechState>("idle");
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const sessionControllerRef = useRef<SpeechSessionController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (sessionControllerRef.current) {
+        sessionControllerRef.current.abort();
+        sessionControllerRef.current = null;
+      }
+    };
+  }, []);
+
+  const isListening = speechState === "listening" || speechState === "starting";
+
   const fetchColleges = async (searchQuery: string, demo: boolean) => {
     setLoading(true);
     setError(null);
@@ -35,6 +52,54 @@ export const CollegeList: React.FC<CollegeListProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVoiceToggle = () => {
+    setVoiceNotice(null);
+    if (isListening) {
+      if (sessionControllerRef.current) {
+        sessionControllerRef.current.abort();
+        sessionControllerRef.current = null;
+      }
+      setSpeechState("idle");
+      return;
+    }
+
+    if (!isSpeechRecognitionSupported()) {
+      setVoiceNotice("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+      return;
+    }
+
+    // SECTION 3.A: Immediately clear previous search text on new session
+    setQuery("");
+
+    const controller = startSpeechSession({
+      silenceTimeoutMs: 3500,
+      autoStopOnSilence: true,
+      onStateChange: (state) => {
+        setSpeechState(state);
+      },
+      onInterimTranscript: (combined) => {
+        // Live dynamic transcription
+        setQuery(combined);
+      },
+      onSilenceTimeout: (finalTranscript) => {
+        const target = finalTranscript || query;
+        if (target) {
+          fetchColleges(target, includeDemo);
+        }
+      },
+      onError: (errorMsg) => {
+        sessionControllerRef.current = null;
+        setSpeechState("error");
+        setVoiceNotice(errorMsg);
+      },
+      onEnd: () => {
+        sessionControllerRef.current = null;
+      },
+    });
+
+    sessionControllerRef.current = controller;
   };
 
   useEffect(() => {
@@ -71,16 +136,67 @@ export const CollegeList: React.FC<CollegeListProps> = ({
 
       {/* Search and Filters Bar */}
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-card p-3 sm:p-3.5 rounded border border-warm-grey shadow-subtle">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
+        <div className={`relative w-full sm:max-w-md rounded transition-all ${
+          isListening ? "ring-2 ring-olive" : ""
+        }`}>
+          <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5 pointer-events-none" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by college name, city, state, or code..."
-            className="w-full min-h-[44px] pl-9 pr-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+            placeholder={
+              isListening
+                ? "Listening... speak now"
+                : "Search by college name, city, state, or code..."
+            }
+            className="w-full min-h-[44px] pl-9 pr-16 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
           />
+          <div className="absolute right-2 top-2 flex items-center gap-1">
+            {isListening && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (sessionControllerRef.current) {
+                    sessionControllerRef.current.abort();
+                    sessionControllerRef.current = null;
+                  }
+                  setSpeechState("idle");
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light transition-colors"
+                title="Cancel voice search"
+                aria-label="Cancel voice search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleVoiceToggle}
+              title={isListening ? "Cancel listening" : "Search with voice"}
+              className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
+                isListening
+                  ? "bg-rose-600 text-white animate-pulse"
+                  : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
+              }`}
+              aria-label={isListening ? "Cancel listening" : "Search with voice"}
+            >
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
+
+        {voiceNotice && (
+          <div className="mt-2 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded p-2 flex items-center justify-between">
+            <span>{voiceNotice}</span>
+            <button
+              type="button"
+              onClick={() => setVoiceNotice(null)}
+              className="text-[10px] font-bold uppercase hover:underline ml-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           <label className="flex items-center gap-2 text-xs text-charcoal cursor-pointer select-none min-h-[40px]">
