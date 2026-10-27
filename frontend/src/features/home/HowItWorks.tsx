@@ -23,7 +23,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
           </p>
         </div>
 
-        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 self-stretch md:self-auto">
+        <div className="hidden md:flex items-center gap-2">
           <button onClick={onExplore} className="btn-secondary min-h-[40px] text-xs py-2 px-3.5 flex items-center justify-center">
             <span>Explore Directory</span>
           </button>

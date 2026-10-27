@@ -170,15 +170,16 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    /* Mobile: vertical fade so text above is 100% crisp on solid warm ivory */
     background: linear-gradient(
-      to bottom,
+      to right,
       #F5F2EB 0%,
-      #F5F2EB 50%,
-      rgba(245, 242, 235, 0.96) 64%,
-      rgba(245, 242, 235, 0.84) 76%,
-      rgba(245, 242, 235, 0.52) 88%,
-      rgba(245, 242, 235, 0.20) 100%
+      #F5F2EB 44%,
+      rgba(245, 242, 235, 0.985) 52%,
+      rgba(245, 242, 235, 0.92) 60%,
+      rgba(245, 242, 235, 0.76) 70%,
+      rgba(245, 242, 235, 0.48) 80%,
+      rgba(245, 242, 235, 0.18) 90%,
+      rgba(245, 242, 235, 0) 98%
     );
   }
 
