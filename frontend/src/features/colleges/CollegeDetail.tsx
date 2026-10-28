@@ -4,6 +4,7 @@ import { api } from "../../lib/api";
 import type {
   CollegeDetail as CollegeDetailType,
   CollegeRatingReport,
+  CollegeSummary,
 } from "../../types/college";
 import { getCollegeDossier, getCollegeRecruiters } from "./collegeDossierData";
 import { CollegeHeader } from "./components/CollegeHeader";
@@ -13,6 +14,7 @@ import { HonestVerdict } from "./components/HonestVerdict";
 import { RecruiterLandscape } from "./components/RecruiterLandscape";
 import { CampusDNA } from "./components/CampusDNA";
 import { CollegeActionFooter } from "./components/CollegeActionFooter";
+import { CollegeComparison } from "./components/CollegeComparison";
 
 interface CollegeDetailProps {
   collegeId: string;
@@ -21,72 +23,8 @@ interface CollegeDetailProps {
   onAskAssistant?: (query?: string) => void;
 }
 
-// 6 Thematic Groups mapping all 25 official parameters deterministically
-export interface ThematicCategory {
-  id: string;
-  name: string;
-  shortName: string;
-  description: string;
-  parameterKeys: string[];
-}
-
-export const THEMATIC_CATEGORIES: ThematicCategory[] = [
-  {
-    id: "academics",
-    name: "Academics & Faculty",
-    shortName: "Academics",
-    description: "Faculty quality, teaching rigor, lab equipment, and academic freedom.",
-    parameterKeys: ["professor_quality", "classroom_quality", "academic_freedom"],
-  },
-  {
-    id: "safety",
-    name: "Campus Safety & Student Support",
-    shortName: "Campus Safety",
-    description: "Women's safety, anti-ragging measures, peer security, and anti-harassment safeguards.",
-    parameterKeys: ["womens_safety", "ragging", "student_bullying", "professor_harassment"],
-  },
-  {
-    id: "infrastructure",
-    name: "Infrastructure & Connectivity",
-    shortName: "Infrastructure",
-    description: "Campus facilities, high-speed Wi-Fi, electricity backup, drinking water, and transit access.",
-    parameterKeys: [
-      "infrastructure",
-      "internet",
-      "electricity",
-      "drinking_water",
-      "transportation",
-      "hospital_access",
-    ],
-  },
-  {
-    id: "living",
-    name: "Hostel & Residential Living",
-    shortName: "Hostels & Living",
-    description: "Mess food quality, washroom cleanliness, curfew rules, and hostel hygiene.",
-    parameterKeys: ["food", "hostel_quality", "hostel_conditions", "toilet_quality"],
-  },
-  {
-    id: "culture",
-    name: "Campus Culture & Student Life",
-    shortName: "Student Culture",
-    description: "Student community atmosphere, campus events, peer dynamics, and social culture.",
-    parameterKeys: ["student_culture", "party_scene", "alcohol_culture"],
-  },
-  {
-    id: "career_governance",
-    name: "Career, Placements & Governance",
-    shortName: "Career & Governance",
-    description: "Campus placements, alumni networking, administration responsiveness, and student voice.",
-    parameterKeys: [
-      "campus_placements",
-      "alumni_interaction",
-      "college_management",
-      "freedom_of_expression",
-      "complaint_handling",
-    ],
-  },
-];
+import { THEMATIC_CATEGORIES, type ThematicCategory } from "../../lib/thematicCategories";
+export { THEMATIC_CATEGORIES, type ThematicCategory };
 
 export const CollegeDetail: React.FC<CollegeDetailProps> = ({
   collegeId,
@@ -96,6 +34,7 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
 }) => {
   const [college, setCollege] = useState<CollegeDetailType | null>(null);
   const [report, setReport] = useState<CollegeRatingReport | null>(null);
+  const [allColleges, setAllColleges] = useState<CollegeSummary[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedParameterKey, setSelectedParameterKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,11 +45,16 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
     setLoading(true);
     setError(null);
 
-    Promise.all([api.getCollege(collegeId), api.getCollegeRatings(collegeId)])
-      .then(([colData, repData]) => {
+    Promise.all([
+      api.getCollege(collegeId),
+      api.getCollegeRatings(collegeId),
+      api.getColleges("", true),
+    ])
+      .then(([colData, repData, colsData]) => {
         if (mounted) {
           setCollege(colData);
           setReport(repData);
+          setAllColleges(colsData);
         }
       })
       .catch((err: any) => {
@@ -244,6 +188,13 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
         onSelectCategory={setSelectedCategory}
         selectedParameterKey={selectedParameterKey}
         onRate={onRate}
+      />
+
+      {/* SECTION C.2 — Head-to-Head College Comparison */}
+      <CollegeComparison
+        currentCollege={college}
+        currentReport={report}
+        allColleges={allColleges}
       />
 
       {/* SECTION D — The Honest Verdict: Evidence-Based Pros & Cons */}

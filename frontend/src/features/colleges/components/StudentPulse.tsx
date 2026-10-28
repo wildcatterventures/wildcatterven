@@ -12,6 +12,8 @@ import type {
   CollegeRatingReport,
 } from "../../../types/college";
 import { THEMATIC_CATEGORIES } from "../CollegeDetail";
+import { SplitVerdictCard } from "./SplitVerdictCard";
+import { analyzeSplitVerdict } from "../../../lib/splitVerdict";
 
 interface StudentPulseProps {
   college: CollegeDetailType;
@@ -492,6 +494,11 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               const percentWidth = Math.min(Math.max((avg / 10) * 100, 0), 100);
               const isExpanded = expandedParamId === param.parameter_id;
               const isHighlighted = selectedParameterKey === param.parameter_key;
+              const verdict = analyzeSplitVerdict(
+                param.distributions,
+                param.average_score,
+                param.numeric_response_count
+              );
 
               return (
                 <div
@@ -514,6 +521,20 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                       <span className="text-[10px] font-mono text-olive uppercase tracking-wider">
                         {param.parameter_category}
                       </span>
+                      {verdict.totalNumericVotes >= 5 && (
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border ${verdict.badgeColorClass} ${verdict.badgeBorderClass} ${verdict.textColorClass}`}
+                          title={verdict.rationale}
+                        >
+                          {verdict.verdictType === "split_verdict"
+                            ? "⚡ Split Verdict"
+                            : verdict.verdictType === "agreement_high"
+                            ? "✓ Consensus (High)"
+                            : verdict.verdictType === "agreement_low"
+                            ? "⚠ Consensus (Critical)"
+                            : "Consensus (Neutral)"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-baseline gap-1 self-start xs:self-auto font-mono">
@@ -561,56 +582,27 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {param.distributions && param.distributions.length > 0 && (
-                        <button
-                          onClick={() => setExpandedParamId(isExpanded ? null : param.parameter_id)}
-                          className="inline-flex items-center gap-1 text-[11px] text-charcoal hover:text-olive underline font-sans min-h-[32px]"
-                        >
-                          <span>{isExpanded ? "Hide distribution" : "View 1–10 votes"}</span>
-                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setExpandedParamId(isExpanded ? null : param.parameter_id)}
+                        className="inline-flex items-center gap-1 text-[11px] text-charcoal hover:text-olive underline font-sans min-h-[32px]"
+                      >
+                        <span>{isExpanded ? "Hide Split Verdict" : "View Split Verdict & Votes"}</span>
+                        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Expanded 1-10 Histogram Drawer */}
-                  {isExpanded && param.distributions && (
-                    <div className="mt-3 pt-3 border-t border-warm-grey/70 bg-card p-3 rounded">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-charcoal-muted mb-2 font-semibold">
-                        Score Frequency (1 to 10 scale)
-                      </div>
-                      <div className="grid grid-cols-10 gap-1 text-center items-end h-14 pt-1">
-                        {Array.from({ length: 10 }, (_, i) => {
-                          const sNum = i + 1;
-                          const found = param.distributions.find((d) => d.rating_score === sNum);
-                          const freq = found ? found.frequency : 0;
-                          const maxF = Math.max(...param.distributions.map((d) => d.frequency), 1);
-                          const bH = (freq / maxF) * 100;
-
-                          return (
-                            <div key={sNum} className="flex flex-col items-center h-full justify-end">
-                              <span className="text-[9px] font-mono font-bold text-charcoal">
-                                {freq > 0 ? freq : ""}
-                              </span>
-                              <div
-                                className={`w-full rounded-t ${
-                                  freq > 0
-                                    ? sNum >= 8
-                                      ? "bg-emerald-700"
-                                      : sNum >= 4
-                                      ? "bg-olive"
-                                      : "bg-rose-700"
-                                    : "bg-warm-grey-light/50 h-1"
-                                }`}
-                                style={{ height: freq > 0 ? `${Math.max(bH, 15)}%` : "4px" }}
-                              />
-                              <span className="text-[9px] font-mono text-charcoal-muted mt-1">
-                                {sNum}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  {/* Expanded Split Verdict Card */}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-warm-grey/70">
+                      <SplitVerdictCard
+                        parameterName={param.parameter_name}
+                        categoryName={param.parameter_category}
+                        distributions={param.distributions}
+                        averageScore={param.average_score}
+                        numericCount={param.numeric_response_count}
+                        noViewCount={param.no_view_count}
+                      />
                     </div>
                   )}
                 </div>

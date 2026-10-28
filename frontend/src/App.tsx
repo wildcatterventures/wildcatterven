@@ -11,6 +11,9 @@ import { CollegeList } from "./features/colleges/CollegeList";
 import { CollegeDetail } from "./features/colleges/CollegeDetail";
 import { RespondentSetup } from "./features/rating/RespondentSetup";
 import { RatingWizard } from "./features/rating/RatingWizard";
+import { MatchEngine } from "./features/match/MatchEngine";
+import { EvidenceLeaderboard } from "./features/leaderboard/EvidenceLeaderboard";
+import { CampusCircle } from "./features/community/CampusCircle";
 import { api } from "./lib/api";
 import { setActiveSessionId } from "./lib/storage";
 import type { CollegeSummary, CollegeDetail as ICollegeDetail } from "./types/college";
@@ -60,6 +63,12 @@ export const App: React.FC = () => {
         }
       } else if (path === "/colleges") {
         setCurrentView("colleges");
+      } else if (path === "/match") {
+        setCurrentView("match");
+      } else if (path === "/leaderboard") {
+        setCurrentView("leaderboard");
+      } else if (path === "/community" || path === "/circle") {
+        setCurrentView("community");
       } else if (path === "/rate") {
         setCurrentView("rate");
         window.scrollTo({ top: 0, behavior: "auto" });
@@ -81,6 +90,15 @@ export const App: React.FC = () => {
       setSearchQuery(data?.query || "");
       window.history.pushState({}, "", "/colleges");
       setCurrentView("colleges");
+    } else if (view === "match") {
+      window.history.pushState({}, "", "/match");
+      setCurrentView("match");
+    } else if (view === "leaderboard") {
+      window.history.pushState({}, "", "/leaderboard");
+      setCurrentView("leaderboard");
+    } else if (view === "community" || view === "circle") {
+      window.history.pushState({}, "", "/community");
+      setCurrentView("community");
     } else if (view === "college_detail" && data?.collegeId) {
       setSelectedCollegeId(data.collegeId);
       window.history.pushState({}, "", `/colleges/${data.collegeId}`);
@@ -155,6 +173,7 @@ export const App: React.FC = () => {
               onOpenAssistantWithQuery={handleOpenAssistantWithQuery}
               onExplore={() => handleNavigate("colleges")}
               onRate={() => handleNavigate("colleges")}
+              onMatch={() => handleNavigate("match")}
             />
             <HowItWorks
               onExplore={() => handleNavigate("colleges")}
@@ -169,6 +188,31 @@ export const App: React.FC = () => {
             />
 
           </>
+        )}
+
+        {/* UNCUT MATCH ENGINE VIEW */}
+        {currentView === "match" && (
+          <MatchEngine
+            onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
+            onRateCollege={(id) => handleNavigate("rate", { collegeId: id })}
+          />
+        )}
+
+        {/* EVIDENCE-BACKED LEADERBOARD VIEW */}
+        {currentView === "leaderboard" && (
+          <EvidenceLeaderboard
+            onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
+            onNavigateToMatch={() => handleNavigate("match")}
+            onBackToHome={() => handleNavigate("home")}
+          />
+        )}
+
+        {/* UNCUT CAMPUS CIRCLE PROTOTYPE VIEW */}
+        {currentView === "community" && (
+          <CampusCircle
+            onBackToHome={() => handleNavigate("colleges")}
+            onNavigateToMatch={() => handleNavigate("match")}
+          />
         )}
 
         {/* COLLEGES DIRECTORY VIEW */}

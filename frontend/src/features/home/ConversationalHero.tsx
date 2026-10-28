@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Mic, MicOff, ArrowRight, BookOpen, MessageSquareQuote, Sparkles, X, Loader2 } from "lucide-react";
+import { Search, Mic, MicOff, ArrowRight, BookOpen, MessageSquareQuote, Sparkles, X, Loader2, Compass } from "lucide-react";
 
 import { isSpeechRecognitionSupported, startSpeechSession, SpeechSessionController, SpeechState } from "../../lib/voice";
 
@@ -8,6 +8,7 @@ interface ConversationalHeroProps {
   onOpenAssistantWithQuery: (query: string) => void;
   onExplore: () => void;
   onRate: () => void;
+  onMatch?: () => void;
 }
 
 export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
@@ -15,6 +16,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   onOpenAssistantWithQuery,
   onExplore,
   onRate,
+  onMatch,
 }) => {
   const [query, setQuery] = useState("");
   const [speechState, setSpeechState] = useState<SpeechState>("idle");
@@ -345,12 +347,21 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2.5 sm:gap-3 max-w-md">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 max-w-xl">
+            {onMatch && (
+              <button
+                onClick={onMatch}
+                className="btn-primary min-h-[44px] text-xs py-2.5 px-5 font-semibold flex items-center justify-center gap-2 shadow-xs bg-[#727D60] hover:bg-[#5E684E] text-[#F5F2EB]"
+              >
+                <Compass className="w-4 h-4 text-[#D4DEC3]" />
+                <span>Find My Fit (Match Engine)</span>
+              </button>
+            )}
             <button
               onClick={onExplore}
-              className="btn-primary min-h-[44px] text-xs py-2.5 px-5 font-semibold flex items-center justify-center gap-2 shadow-xs"
+              className="btn-secondary min-h-[44px] text-xs py-2.5 px-5 font-semibold bg-card border border-warm-grey hover:border-charcoal text-charcoal flex items-center justify-center gap-2 shadow-xs"
             >
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="w-4 h-4 text-charcoal-muted" />
               <span>Explore Directory</span>
             </button>
             <button
@@ -358,7 +369,7 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
               className="btn-secondary min-h-[44px] text-xs py-2.5 px-5 font-semibold bg-card border border-warm-grey hover:border-charcoal text-charcoal flex items-center justify-center gap-2 shadow-xs"
             >
               <MessageSquareQuote className="w-4 h-4 text-olive" />
-              <span>Rate Your Campus</span>
+              <span>Rate Campus</span>
             </button>
           </div>
         </div>
