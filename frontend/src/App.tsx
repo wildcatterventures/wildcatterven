@@ -234,6 +234,7 @@ export const App: React.FC = () => {
             onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
             onRateCollege={(id) => handleNavigate("rate", { collegeId: id })}
             onOpenUnknownModal={() => setIsUnknownModalOpen(true)}
+            onOpenScoringDemo={() => handleNavigate("scoring_demo")}
           />
         )}
 

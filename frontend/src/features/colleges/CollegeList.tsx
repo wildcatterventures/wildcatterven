@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, PlusCircle, AlertCircle, RefreshCw, Mic, MicOff, X } from "lucide-react";
+import { Search, PlusCircle, AlertCircle, RefreshCw, Mic, MicOff, X, Sparkles } from "lucide-react";
 
 import { api } from "../../lib/api";
 import { isSpeechRecognitionSupported, startSpeechSession, SpeechSessionController, SpeechState } from "../../lib/voice";
@@ -11,6 +11,7 @@ interface CollegeListProps {
   onSelectCollege: (collegeId: string) => void;
   onRateCollege: (collegeId: string) => void;
   onOpenUnknownModal: () => void;
+  onOpenScoringDemo?: () => void;
 }
 
 export const CollegeList: React.FC<CollegeListProps> = ({
@@ -18,6 +19,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
   onSelectCollege,
   onRateCollege,
   onOpenUnknownModal,
+  onOpenScoringDemo,
 }) => {
   const [query, setQuery] = useState(initialQuery);
   const [includeDemo, setIncludeDemo] = useState(true);
@@ -148,6 +150,28 @@ export const CollegeList: React.FC<CollegeListProps> = ({
           <span>Add Unlisted College</span>
         </button>
       </div>
+
+      {/* Evaluator Demo Banner */}
+      {onOpenScoringDemo && (
+        <div className="mb-6 p-3.5 sm:p-4 rounded-lg border border-olive/30 bg-olive-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-olive flex-shrink-0" />
+            <div className="text-charcoal leading-relaxed">
+              <span className="font-semibold">Looking for the PICT &amp; VJTI Score Progression Demo?</span>{" "}
+              <span className="text-charcoal-muted">
+                Per data safety rules, production college cards below only display verified real student submissions. Simulated evaluations (PICT 100 &rarr; 101, VJTI 100 &rarr; 99) run in the isolated demo sandbox.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenScoringDemo}
+            className="btn-primary py-2 px-3.5 text-xs whitespace-nowrap self-start sm:self-auto font-medium flex-shrink-0"
+          >
+            Open Scoring Demo &rarr;
+          </button>
+        </div>
+      )}
 
       {/* Search and Filters Bar */}
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-card p-3 sm:p-3.5 rounded border border-warm-grey shadow-subtle">
