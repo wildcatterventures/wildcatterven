@@ -195,4 +195,98 @@ describe("voiceRatingParser", () => {
       assert.match(res.clarification || "", /multiple numbers/);
     });
   });
+
+  describe("Single number 2 and homophone variations", () => {
+    it("recognizes single digit '2'", () => {
+      const res = parseSpokenRating("2");
+      assert.equal(res.valid, true);
+      assert.equal(res.score, 2);
+    });
+
+    it("recognizes word 'two'", () => {
+      const res = parseSpokenRating("two");
+      assert.equal(res.valid, true);
+      assert.equal(res.score, 2);
+    });
+
+    it("recognizes isolated homophones 'to', 'too', 'tu' as 2", () => {
+      assert.equal(parseSpokenRating("to").valid, true);
+      assert.equal(parseSpokenRating("to").score, 2);
+
+      assert.equal(parseSpokenRating("too").valid, true);
+      assert.equal(parseSpokenRating("too").score, 2);
+
+      assert.equal(parseSpokenRating("tu").valid, true);
+      assert.equal(parseSpokenRating("tu").score, 2);
+    });
+
+    it("recognizes conversational phrases for 2", () => {
+      assert.equal(parseSpokenRating("score is 2").score, 2);
+      assert.equal(parseSpokenRating("rating 2").score, 2);
+      assert.equal(parseSpokenRating("give it 2").score, 2);
+      assert.equal(parseSpokenRating("give it to").score, 2);
+      assert.equal(parseSpokenRating("give it a two").score, 2);
+    });
+
+    it("recognizes ordinal 'second' as 2", () => {
+      const res = parseSpokenRating("second");
+      assert.equal(res.valid, true);
+      assert.equal(res.score, 2);
+    });
+
+    it("recognizes fractional notation '2/10'", () => {
+      const res = parseSpokenRating("2/10");
+      assert.equal(res.valid, true);
+      assert.equal(res.score, 2);
+    });
+  });
+
+  describe("Multi-digit numbers (123, 245) rejection with guidance", () => {
+    it("rejects '123' with clear guidance", () => {
+      const res = parseSpokenRating("123");
+      assert.equal(res.valid, false);
+      assert.equal(res.score, null);
+      assert.match(res.clarification || "", /between 1 and 10/);
+    });
+
+    it("rejects '245' with clear guidance", () => {
+      const res = parseSpokenRating("245");
+      assert.equal(res.valid, false);
+      assert.equal(res.score, null);
+      assert.match(res.clarification || "", /between 1 and 10/);
+    });
+
+    it("rejects multi-word sequence 'one two three' as ambiguous multiple numbers", () => {
+      const res = parseSpokenRating("one two three");
+      assert.equal(res.valid, false);
+      assert.equal(res.ambiguous, true);
+      assert.match(res.clarification || "", /multiple numbers/);
+    });
+  });
+
+  describe("Additional homophones and ordinals", () => {
+    it("recognizes 'won' as 1 and 'first' as 1", () => {
+      assert.equal(parseSpokenRating("won").score, 1);
+      assert.equal(parseSpokenRating("first").score, 1);
+    });
+
+    it("recognizes 'tree' or 'tri' as 3, 'third' as 3", () => {
+      assert.equal(parseSpokenRating("tree").score, 3);
+      assert.equal(parseSpokenRating("tri").score, 3);
+      assert.equal(parseSpokenRating("third").score, 3);
+    });
+
+    it("recognizes 'for', 'fore' as 4, 'fourth' as 4", () => {
+      assert.equal(parseSpokenRating("for").score, 4);
+      assert.equal(parseSpokenRating("fore").score, 4);
+      assert.equal(parseSpokenRating("fourth").score, 4);
+    });
+
+    it("recognizes 'ate', 'ait' as 8, 'eighth' as 8", () => {
+      assert.equal(parseSpokenRating("ate").score, 8);
+      assert.equal(parseSpokenRating("ait").score, 8);
+      assert.equal(parseSpokenRating("eighth").score, 8);
+    });
+  });
 });
+

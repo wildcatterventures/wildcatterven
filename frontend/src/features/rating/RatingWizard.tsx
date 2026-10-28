@@ -78,11 +78,20 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   // Concurrency & Lifecycle Protection Refs
   const controllerRef = useRef<SpeechSessionController | null>(null);
   const advanceTimerRef = useRef<any>(null);
+  const autoAdvanceDebounceRef = useRef<any>(null);
+  const latestTranscriptRef = useRef<string>("");
   const isAdvancingRef = useRef<boolean>(false);
   const isSavingRef = useRef<boolean>(false);
   const currentQuestionIndexRef = useRef<number>(0);
   const voiceStartedRef = useRef<boolean>(false);
   const readAloudRef = useRef<boolean>(false);
+
+  const clearAutoAdvanceDebounce = useCallback(() => {
+    if (autoAdvanceDebounceRef.current) {
+      clearTimeout(autoAdvanceDebounceRef.current);
+      autoAdvanceDebounceRef.current = null;
+    }
+  }, []);
 
   // Sync refs with state
   useEffect(() => {
@@ -137,6 +146,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     return () => {
       mounted = false;
       stopSpeaking();
+      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
       }
@@ -145,12 +155,13 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         controllerRef.current = null;
       }
     };
-  }, [session.id, college.college_id]);
+  }, [session.id, college.college_id, clearAutoAdvanceDebounce]);
 
   // Clean teardown on unmount
   useEffect(() => {
     return () => {
       stopSpeaking();
+      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
       }
@@ -159,7 +170,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         controllerRef.current = null;
       }
     };
-  }, []);
+  }, [clearAutoAdvanceDebounce]);
 
   // Saves an answer through the backend API
   const handleAnswerChange = async (score: number | null, isNoView: boolean): Promise<boolean> => {
@@ -170,6 +181,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     setSavingAnswer(true);
 
     // Cancel pending voice progression if user manually taps
+    clearAutoAdvanceDebounce();
     if (advanceTimerRef.current) {
       clearTimeout(advanceTimerRef.current);
       advanceTimerRef.current = null;
@@ -218,6 +230,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       }
 
       // Teardown any existing controller cleanly
+      clearAutoAdvanceDebounce();
       if (controllerRef.current) {
         controllerRef.current.abort();
         controllerRef.current = null;
@@ -231,9 +244,157 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       setVoiceError(null);
       setVoiceStatus("listening");
       setInterimTranscript("");
+      latestTranscriptRef.current = "";
 
       const param = parameters[targetIndex];
       if (!param) return;
+
+      // Centralized processor for any recognized speech (interim debounce, final, or silence timeout)
+      const processSpokenTranscript = async (
+        transcriptText: string,
+        activeController?: SpeechSessionController | null
+      ) => {
+        if (isAdvancingRef.current) return;
+        if (currentQuestionIndexRef.current !== targetIndex) return;
+
+        const cleanTranscript = (transcriptText || "").trim();
+        if (!cleanTranscript) {
+          setVoiceStatus("paused");
+          setVoiceFeedback("Listening paused due to silence. Tap 'Resume' to continue.");
+          return;
+        }
+
+        setInterimTranscript(cleanTranscript);
+        const parsed: ParsedVoiceRating = parseSpokenRating(cleanTranscript);
+
+        // 1. Navigation Commands
+        if (parsed.isNavigation === "previous") {
+          clearAutoAdvanceDebounce();
+          activeController?.abort();
+          controllerRef.current = null;
+          if (targetIndex > 0) {
+            setVoiceFeedback("Going back to previous question...");
+            if (readAloudRef.current) {
+              speakText("Going back to previous question.");
+            }
+            setCurrentIndex(targetIndex - 1);
+          } else {
+            setVoiceFeedback("Already at the first question.");
+          }
+          return;
+        }
+
+        if (parsed.isNavigation === "repeat") {
+          clearAutoAdvanceDebounce();
+          activeController?.abort();
+          controllerRef.current = null;
+          announceOrPromptQuestion(targetIndex);
+          return;
+        }
+
+        if (parsed.isNavigation === "review") {
+          clearAutoAdvanceDebounce();
+          activeController?.abort();
+          controllerRef.current = null;
+          setVoiceStatus("idle");
+          setViewState("review");
+          return;
+        }
+
+        if (parsed.isNavigation === "next") {
+          clearAutoAdvanceDebounce();
+          activeController?.abort();
+          controllerRef.current = null;
+          if (targetIndex < parameters.length - 1) {
+            setCurrentIndex(targetIndex + 1);
+          } else {
+            setViewState("review");
+          }
+          return;
+        }
+
+        // 2. Invalid or Ambiguous Speech: Do NOT advance, do NOT store answer!
+        if (!parsed.valid) {
+          clearAutoAdvanceDebounce();
+          const clarifyMsg =
+            parsed.clarification ||
+            "I didn't catch a rating. Say a number from 1 to 10, or say 'No view'.";
+          setVoiceFeedback(clarifyMsg);
+
+          if (readAloudRef.current) {
+            activeController?.abort();
+            controllerRef.current = null;
+            setIsSpeaking(true);
+            speakText(clarifyMsg, {
+              onEnd: () => {
+                setIsSpeaking(false);
+                startListeningForQuestion(targetIndex);
+              },
+              onError: () => {
+                setIsSpeaking(false);
+                startListeningForQuestion(targetIndex);
+              },
+            });
+          }
+          return;
+        }
+
+        // 3. Valid Rating Parsed: Lock against duplicate advancing
+        isAdvancingRef.current = true;
+        clearAutoAdvanceDebounce();
+        activeController?.stop();
+        controllerRef.current = null;
+        setVoiceStatus("confirming");
+
+        const score = parsed.score;
+        const isNoView = parsed.isNoView;
+        const feedbackMsg = isNoView
+          ? 'Heard "No view" — selected'
+          : `Heard ${score} — selected`;
+
+        setVoiceFeedback(feedbackMsg);
+
+        // Immediately update local answers so ParameterInput highlights the selected button!
+        setAnswers((prev) => ({
+          ...prev,
+          [param.parameter_id]: { score, isNoView },
+        }));
+
+        try {
+          // Persist answer to backend before scheduling progression
+          await api.saveAnswer(session.id, param.parameter_id, {
+            score,
+            is_no_view: isNoView,
+          });
+
+          // Prevent progression if user navigated away while save was in-flight
+          if (currentQuestionIndexRef.current !== targetIndex) {
+            isAdvancingRef.current = false;
+            return;
+          }
+
+          setVoiceFeedback(`${feedbackMsg}. Advancing...`);
+
+          // Visual confirmation delay (~900ms) before advancing to next question
+          advanceTimerRef.current = setTimeout(() => {
+            isAdvancingRef.current = false;
+            advanceTimerRef.current = null;
+
+            if (targetIndex < parameters.length - 1) {
+              setCurrentIndex(targetIndex + 1);
+            } else {
+              setVoiceStatus("idle");
+              setViewState("review");
+            }
+          }, 900);
+        } catch (err: any) {
+          isAdvancingRef.current = false;
+          setVoiceStatus("error");
+          const errText = err?.message || "Failed to save answer. Please check your connection and tap retry.";
+          setVoiceError(errText);
+          setError(errText);
+        }
+      };
 
       const controller = startSpeechSession({
         lang: "en-IN",
@@ -242,151 +403,52 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         onStart: () => {
           setVoiceStatus("listening");
           setVoiceError(null);
+          latestTranscriptRef.current = "";
         },
-        onInterimTranscript: (combined: string) => {
+        onInterimTranscript: (combined: string, isComplete?: boolean) => {
           if (isAdvancingRef.current) return;
+          latestTranscriptRef.current = combined;
           setInterimTranscript(combined);
+
+          clearAutoAdvanceDebounce();
+
+          const parsed = parseSpokenRating(combined);
+          if (parsed.valid) {
+            if (isComplete || parsed.isNavigation) {
+              processSpokenTranscript(combined, controllerRef.current);
+            } else {
+              // Valid rating hypothesis (e.g. user said "2" or "two"):
+              // Wait 500ms for user to finish potential phrase (e.g. "two out of ten"), then commit
+              autoAdvanceDebounceRef.current = setTimeout(() => {
+                autoAdvanceDebounceRef.current = null;
+                processSpokenTranscript(combined, controllerRef.current);
+              }, 500);
+            }
+          }
         },
         onFinalTranscript: async (finalText: string) => {
-          if (isAdvancingRef.current) return;
-          if (currentQuestionIndexRef.current !== targetIndex) return;
-
-          setInterimTranscript(finalText);
-          const parsed: ParsedVoiceRating = parseSpokenRating(finalText);
-
-          // 1. Navigation Commands
-          if (parsed.isNavigation === "previous") {
-            controller.abort();
-            controllerRef.current = null;
-            if (targetIndex > 0) {
-              setVoiceFeedback("Going back to previous question...");
-              if (readAloudRef.current) {
-                speakText("Going back to previous question.");
-              }
-              setCurrentIndex(targetIndex - 1);
-            } else {
-              setVoiceFeedback("Already at the first question.");
-            }
-            return;
-          }
-
-          if (parsed.isNavigation === "repeat") {
-            controller.abort();
-            controllerRef.current = null;
-            announceOrPromptQuestion(targetIndex);
-            return;
-          }
-
-          if (parsed.isNavigation === "review") {
-            controller.abort();
-            controllerRef.current = null;
-            setVoiceStatus("idle");
-            setViewState("review");
-            return;
-          }
-
-          if (parsed.isNavigation === "next") {
-            controller.abort();
-            controllerRef.current = null;
-            if (targetIndex < parameters.length - 1) {
-              setCurrentIndex(targetIndex + 1);
-            } else {
-              setViewState("review");
-            }
-            return;
-          }
-
-          // 2. Invalid or Ambiguous Speech: Do NOT advance, do NOT store answer!
-          if (!parsed.valid) {
-            const clarifyMsg =
-              parsed.clarification ||
-              "I didn't catch a rating. Say a number from 1 to 10, or say 'No view'.";
-            setVoiceFeedback(clarifyMsg);
-
-            if (readAloudRef.current) {
-              controller.abort();
-              controllerRef.current = null;
-              setIsSpeaking(true);
-              speakText(clarifyMsg, {
-                onEnd: () => {
-                  setIsSpeaking(false);
-                  startListeningForQuestion(targetIndex);
-                },
-                onError: () => {
-                  setIsSpeaking(false);
-                  startListeningForQuestion(targetIndex);
-                },
-              });
-            }
-            return;
-          }
-
-          // 3. Valid Rating Parsed: Lock against duplicate advancing
-          isAdvancingRef.current = true;
-          controller.stop();
-          controllerRef.current = null;
-          setVoiceStatus("confirming");
-
-          const score = parsed.score;
-          const isNoView = parsed.isNoView;
-          const feedbackMsg = isNoView
-            ? 'Heard "No view" — selected'
-            : `Heard ${score} — selected`;
-
-          setVoiceFeedback(feedbackMsg);
-
-          // Immediately update local answers so ParameterInput highlights the selected button!
-          setAnswers((prev) => ({
-            ...prev,
-            [param.parameter_id]: { score, isNoView },
-          }));
-
-          try {
-            // Persist answer to backend before scheduling progression
-            await api.saveAnswer(session.id, param.parameter_id, {
-              score,
-              is_no_view: isNoView,
-            });
-
-            // Prevent progression if user navigated away while save was in-flight
-            if (currentQuestionIndexRef.current !== targetIndex) {
-              isAdvancingRef.current = false;
-              return;
-            }
-
-            setVoiceFeedback(`${feedbackMsg}. Advancing...`);
-
-            // Visual confirmation delay (~900ms) before advancing to next question
-            advanceTimerRef.current = setTimeout(() => {
-              isAdvancingRef.current = false;
-              advanceTimerRef.current = null;
-
-              if (targetIndex < parameters.length - 1) {
-                setCurrentIndex(targetIndex + 1);
-              } else {
-                setVoiceStatus("idle");
-                setViewState("review");
-              }
-            }, 900);
-          } catch (err: any) {
-            isAdvancingRef.current = false;
-            setVoiceStatus("error");
-            const errText = err?.message || "Failed to save answer. Please check your connection and tap retry.";
-            setVoiceError(errText);
-            setError(errText);
-          }
+          clearAutoAdvanceDebounce();
+          processSpokenTranscript(finalText, controllerRef.current);
         },
-        onSilenceTimeout: () => {
+        onSilenceTimeout: (finalTranscript?: string) => {
+          clearAutoAdvanceDebounce();
           if (isAdvancingRef.current) return;
-          setVoiceStatus("paused");
-          setVoiceFeedback("Listening paused due to silence. Tap 'Resume' to continue.");
+          const candidate = (finalTranscript || latestTranscriptRef.current || "").trim();
+          if (candidate) {
+            processSpokenTranscript(candidate, controllerRef.current);
+          } else {
+            setVoiceStatus("paused");
+            setVoiceFeedback("Listening paused due to silence. Tap 'Resume' to continue.");
+          }
         },
         onError: (errMsg: string) => {
+          clearAutoAdvanceDebounce();
           if (isAdvancingRef.current) return;
           setVoiceStatus("error");
           setVoiceError(errMsg);
         },
         onEnd: () => {
+          clearAutoAdvanceDebounce();
           if (!isAdvancingRef.current && voiceStartedRef.current) {
             setVoiceStatus((curr) => (curr === "confirming" ? curr : "paused"));
           }
@@ -395,7 +457,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
       controllerRef.current = controller;
     },
-    [parameters, session.id]
+    [parameters, session.id, clearAutoAdvanceDebounce]
   );
 
   // Announces question if readAloud is enabled, then begins listening
@@ -404,6 +466,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       const param = parameters[targetIndex];
       if (!param) return;
 
+      clearAutoAdvanceDebounce();
       if (controllerRef.current) {
         controllerRef.current.abort();
         controllerRef.current = null;
@@ -428,7 +491,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         startListeningForQuestion(targetIndex);
       }
     },
-    [parameters, startListeningForQuestion]
+    [parameters, startListeningForQuestion, clearAutoAdvanceDebounce]
   );
 
   // Automatically start voice listening when question changes in voice mode
@@ -445,6 +508,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     announceOrPromptQuestion(currentIndex);
 
     return () => {
+      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;
@@ -455,7 +519,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       }
       stopSpeaking();
     };
-  }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion]);
+  }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion, clearAutoAdvanceDebounce]);
 
   // Mode Switcher: Safely switches between Text and Voice while preserving answers
   const handleSwitchMode = (mode: "text" | "voice") => {
@@ -463,6 +527,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
     if (mode === "text") {
       stopSpeaking();
+      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;
@@ -506,6 +571,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
   // Pause listening
   const handlePauseListening = () => {
+    clearAutoAdvanceDebounce();
     if (controllerRef.current) {
       controllerRef.current.abort();
       controllerRef.current = null;
@@ -853,7 +919,9 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                           : voiceStatus === "confirming"
                           ? "Answer confirmed — advancing..."
                           : voiceStatus === "paused"
-                          ? "Listening paused due to silence"
+                          ? (voiceFeedback && (voiceFeedback.includes("Scores must be") || voiceFeedback.includes("Could not recognize") || voiceFeedback.includes("multiple numbers"))
+                              ? "Listening paused — tap Resume to answer"
+                              : "Listening paused due to silence")
                           : "Voice input ready"}
                       </span>
                     </div>

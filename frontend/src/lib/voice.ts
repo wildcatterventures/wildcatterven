@@ -363,7 +363,11 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
         // ignore
       }
 
-      options.onSilenceTimeout?.(finalSubmission);
+      if (options.onSilenceTimeout) {
+        options.onSilenceTimeout(finalSubmission);
+      } else if (finalSubmission) {
+        options.onFinalTranscript?.(finalSubmission);
+      }
     }, silenceTimeoutMs);
   };
 

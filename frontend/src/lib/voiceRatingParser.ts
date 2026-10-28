@@ -28,8 +28,10 @@ const NUMBER_WORDS: Record<string, number> = {
   two: 2,
   to: 2,
   too: 2,
+  tu: 2,
   three: 3,
   tree: 3,
+  tri: 3,
   four: 4,
   for: 4,
   fore: 4,
@@ -38,8 +40,19 @@ const NUMBER_WORDS: Record<string, number> = {
   seven: 7,
   eight: 8,
   ate: 8,
+  ait: 8,
   nine: 9,
   ten: 10,
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
 };
 
 const NO_VIEW_PHRASES = [
@@ -92,6 +105,7 @@ export function normalizeSpokenText(text: string): string {
   if (!text) return "";
   return text
     .toLowerCase()
+    .replace(/(\b\d+|[a-z]+)\s*[\/]\s*10\b/gi, "$1 out of 10")
     .replace(/['’]/g, "") // "don't" -> "dont", "haven't" -> "havent"
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, " ")
     .replace(/\s+/g, " ")
@@ -211,11 +225,11 @@ export function parseSpokenRating(rawText: string): ParsedVoiceRating {
     } else if (NUMBER_WORDS[w] !== undefined) {
       // Disallow homophones like "to", "for", "won", "ate" if they appear as prepositions rather than direct answers
       // e.g. "listen to question" -> "to" is a preposition, not number 2!
-      const isHomophone = ["to", "too", "for", "fore", "won", "ate"].includes(w);
+      const isHomophone = ["to", "too", "tu", "for", "fore", "won", "ate", "ait"].includes(w);
       if (isHomophone) {
         // Only accept if it's a direct isolated word or preceded by "rating", "score", "give", "give it", "number"
         const isIsolated = words.length <= 2;
-        const hasNumberContext = /(rating|score|give|number|level|rated)\s+(to|too|for|won|ate)\b/i.test(clean);
+        const hasNumberContext = /(rating|score|give(?:\s+it)?|number|level|rated)\s+(?:a\s+)?(to|too|tu|for|fore|won|ate|ait)\b/i.test(clean);
         if (isIsolated || hasNumberContext) {
           foundNumbers.push(NUMBER_WORDS[w]);
         }
@@ -251,7 +265,7 @@ export function parseSpokenRating(rawText: string): ParsedVoiceRating {
 
   // 7. Direct Word Match
   for (const [w, num] of Object.entries(NUMBER_WORDS)) {
-    if (["to", "too", "for", "fore", "won", "ate"].includes(w)) {
+    if (["to", "too", "tu", "for", "fore", "won", "ate", "ait"].includes(w)) {
       // Skip homophones in general fallback to avoid false positives on ordinary English sentences
       continue;
     }
