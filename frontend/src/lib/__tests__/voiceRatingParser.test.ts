@@ -288,5 +288,50 @@ describe("voiceRatingParser", () => {
       assert.equal(parseSpokenRating("eighth").score, 8);
     });
   });
+
+  describe("Explicit 'Rating N' voice command format (FIX 1)", () => {
+    it("recognizes 'Rating 10', 'Rating 8', 'Rating 5'", () => {
+      const r10 = parseSpokenRating("Rating 10");
+      assert.equal(r10.valid, true);
+      assert.equal(r10.score, 10);
+
+      const r8 = parseSpokenRating("Rating 8");
+      assert.equal(r8.valid, true);
+      assert.equal(r8.score, 8);
+
+      const r5 = parseSpokenRating("Rating 5");
+      assert.equal(r5.valid, true);
+      assert.equal(r5.score, 5);
+    });
+
+    it("recognizes word numbers after Rating (e.g. 'Rating ten', 'Rating two')", () => {
+      assert.equal(parseSpokenRating("Rating ten").score, 10);
+      assert.equal(parseSpokenRating("Rating eight").score, 8);
+      assert.equal(parseSpokenRating("Rating two").score, 2);
+      assert.equal(parseSpokenRating("Rating to").score, 2);
+    });
+
+    it("extracts the rating associated with the word 'Rating' and ignores unrelated numbers in the sentence", () => {
+      // e.g. "Question 3 rating 8" -> 8, NOT 3
+      const res1 = parseSpokenRating("Question 3 rating 8");
+      assert.equal(res1.valid, true);
+      assert.equal(res1.score, 8);
+
+      // e.g. "For criterion 4 my rating is 10" -> 10, NOT 4
+      const res2 = parseSpokenRating("For criterion 4 my rating is 10");
+      assert.equal(res2.valid, true);
+      assert.equal(res2.score, 10);
+    });
+
+    it("rejects out of range ratings in 'Rating N' commands", () => {
+      const res0 = parseSpokenRating("Rating 0");
+      assert.equal(res0.valid, false);
+      assert.match(res0.clarification || "", /between 1 and 10/);
+
+      const res15 = parseSpokenRating("Rating 15");
+      assert.equal(res15.valid, false);
+      assert.match(res15.clarification || "", /between 1 and 10/);
+    });
+  });
 });
 

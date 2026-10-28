@@ -21,11 +21,24 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
   const [selectedCollegeId, setSelectedCollegeId] = useState<string>(initialCollegeId || "");
   const [affiliation, setAffiliation] = useState<Affiliation>("current_student");
   const [displayName, setDisplayName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
   const [collegeEmail, setCollegeEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [loadingColleges, setLoadingColleges] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
+
+  // Sync initialCollegeId if it changes
+  useEffect(() => {
+    if (initialCollegeId) {
+      setSelectedCollegeId(initialCollegeId);
+    }
+  }, [initialCollegeId]);
 
   useEffect(() => {
     let mounted = true;
@@ -53,8 +66,10 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
 
   const selectedCollege = colleges.find((c) => c.college_id === selectedCollegeId);
   const emailValidation = validateCollegeEmail(collegeEmail, selectedCollege, colleges);
+  const isNameValid = displayName.trim().length > 0;
   const canSubmit = Boolean(
     selectedCollegeId &&
+    isNameValid &&
     collegeEmail.trim() &&
     emailValidation.isValid &&
     !submitting &&
@@ -65,6 +80,12 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
     e.preventDefault();
     if (!selectedCollegeId) {
       setError("Please select a college to rate.");
+      return;
+    }
+
+    if (!isNameValid) {
+      setNameTouched(true);
+      setError("Please enter your name.");
       return;
     }
 
@@ -85,7 +106,7 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
         client_uuid: clientUuid,
         declared_college_id: selectedCollegeId,
         affiliation: affiliation,
-        display_name: displayName.trim() || undefined,
+        display_name: displayName.trim(),
         college_email: collegeEmail.trim().toLowerCase(),
       });
 
@@ -134,14 +155,6 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
           </p>
         </div>
 
-        {/* Persistent Unverified Notice */}
-        <div className="mb-6 p-3.5 rounded bg-warm-grey-light border border-warm-grey text-xs text-charcoal flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-olive flex-shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <strong>Self-Declared Affiliation:</strong> Affiliation is unverified in this prototype. You will rate your declared college; each respondent profile may contribute at most once toward official score thresholds.
-          </div>
-        </div>
-
         {error && (
           <div className="mb-6 p-3.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex-1">
@@ -171,37 +184,59 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* College Selection */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-2">
-              Select Your College *
-            </label>
-            <div className="relative">
-              <Building2 className="w-4 h-4 text-charcoal-muted absolute left-3 top-3 pointer-events-none" />
-              <select
-                required
-                value={selectedCollegeId}
-                onChange={(e) => setSelectedCollegeId(e.target.value)}
-                disabled={loadingColleges || submitting}
-                className="w-full pl-9 pr-4 py-2.5 text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans text-charcoal cursor-pointer"
-              >
-                {loadingColleges ? (
-                  <option>Loading institutions...</option>
-                ) : (
-                  colleges.map((c) => (
-                    <option key={c.college_id} value={c.college_id}>
-                      {c.name} ({c.city}, {c.state}) {c.is_demo ? "— [DEMO]" : ""}
-                    </option>
-                  ))
-                )}
-              </select>
+          {/* Selected College Display (or fallback selector if missing) */}
+          {selectedCollege ? (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-2">
+                Selected College
+              </label>
+              <div className="p-3.5 sm:p-4 rounded-lg bg-warm-grey-light/70 border border-warm-grey flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-md bg-paper border border-warm-grey flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5 text-olive" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-serif text-base sm:text-lg font-bold text-charcoal truncate">
+                      {selectedCollege.name}
+                    </h3>
+                    <p className="text-xs text-charcoal-muted truncate">
+                      {selectedCollege.city}, {selectedCollege.state}
+                      {selectedCollege.is_demo ? " • [DEMO]" : ""}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            {selectedCollegeId && (
-              <p className="text-[11px] text-charcoal-muted mt-1.5 font-sans">
-                Notice: Seeded demo institutions (St. Jude Demo and Apex Demo) allow testing real-time score shifts (100 → 99 or 100 → 101) without altering real colleges.
-              </p>
-            )}
-          </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-2">
+                Select Your College *
+              </label>
+              <div className="relative">
+                <Building2 className="w-4 h-4 text-charcoal-muted absolute left-3 top-3 pointer-events-none" />
+                <select
+                  required
+                  value={selectedCollegeId}
+                  onChange={(e) => setSelectedCollegeId(e.target.value)}
+                  disabled={loadingColleges || submitting}
+                  className="w-full pl-9 pr-4 py-2.5 text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans text-charcoal cursor-pointer"
+                >
+                  {loadingColleges ? (
+                    <option>Loading institutions...</option>
+                  ) : (
+                    <>
+                      <option value="">Choose a college to rate...</option>
+                      {colleges.map((c) => (
+                        <option key={c.college_id} value={c.college_id}>
+                          {c.name} ({c.city}, {c.state}) {c.is_demo ? "— [DEMO]" : ""}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Official College Email Input */}
           <div>
@@ -324,20 +359,41 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
             </div>
           </div>
 
-          {/* Display Name (Optional) */}
+          {/* Respondent Name (Required) */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-1">
-              Public Display Name (Optional)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                htmlFor="respondent-name"
+                className="block text-xs font-semibold uppercase tracking-wider text-charcoal"
+              >
+                Your Name <span className="text-rose-600">*</span>
+              </label>
+            </div>
             <input
+              id="respondent-name"
               type="text"
+              required
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. Maya S. (Leave blank to remain anonymous)"
-              className="w-full px-3 py-2 text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+                if (error && e.target.value.trim().length > 0) setError(null);
+              }}
+              onBlur={() => setNameTouched(true)}
+              placeholder="e.g. Maya S."
+              className={`w-full px-3.5 py-2.5 text-sm bg-paper border rounded focus:outline-none font-sans text-charcoal transition-all ${
+                nameTouched && !isNameValid
+                  ? "border-rose-400 focus:border-rose-500 bg-rose-50/20"
+                  : "border-warm-grey focus:border-olive"
+              }`}
             />
-            <p className="text-[11px] text-charcoal-muted mt-1">
-              Never share sensitive passwords or personal phone numbers.
+            {nameTouched && !isNameValid && (
+              <p className="mt-1.5 text-xs text-rose-700 flex items-center gap-1 font-medium">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>Please enter your name.</span>
+              </p>
+            )}
+            <p className="text-[11px] text-charcoal-muted mt-1 leading-relaxed">
+              Your name is displayed alongside your feedback. Never share sensitive passwords or personal phone numbers.
             </p>
           </div>
 
@@ -355,7 +411,9 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
               type="submit"
               disabled={!canSubmit}
               title={
-                !collegeEmail.trim()
+                !isNameValid
+                  ? "Please enter your name"
+                  : !collegeEmail.trim()
                   ? "Please enter your college email address"
                   : !emailValidation.isValid
                   ? emailValidation.error

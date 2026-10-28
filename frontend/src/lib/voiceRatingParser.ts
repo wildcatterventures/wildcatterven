@@ -36,7 +36,10 @@ const NUMBER_WORDS: Record<string, number> = {
   for: 4,
   fore: 4,
   five: 5,
+  fivee: 5,
+  seex: 6,
   six: 6,
+  sex: 6,
   seven: 7,
   eight: 8,
   ate: 8,
@@ -176,7 +179,41 @@ export function parseSpokenRating(rawText: string): ParsedVoiceRating {
     }
   }
 
-  // 3. Out-of-Range Rejections (e.g. 0, 11-99, negative, or words like 'zero', 'eleven')
+  // 3. Explicit "Rating <score>" Command Match
+  // Extracts the specific rating bound to the command "Rating" / "Rate", even if other numbers appear elsewhere
+  // (e.g. "Rating 10" -> 10, "Rating 8" -> 8, "Rating 5" -> 5, "Question 3 rating 8" -> 8)
+  const ratingCommandMatch = clean.match(
+    /\b(?:my\s+)?rat(?:ing|ed|e)\s*(?:is\s*)?(?:of\s*)?(?:a\s*)?(\d+|[a-z]+)\b/i
+  );
+  if (ratingCommandMatch) {
+    const candidate = ratingCommandMatch[1].toLowerCase();
+    if (/^\d+$/.test(candidate)) {
+      const num = parseInt(candidate, 10);
+      if (num >= 1 && num <= 10) {
+        return { valid: true, score: num, isNoView: false, rawText };
+      } else {
+        return {
+          valid: false,
+          score: null,
+          isNoView: false,
+          rawText,
+          clarification: `Heard "Rating ${candidate}". Scores must be between 1 and 10, or say 'No view'.`,
+        };
+      }
+    } else if (OUT_OF_RANGE_WORDS.includes(candidate)) {
+      return {
+        valid: false,
+        score: null,
+        isNoView: false,
+        rawText,
+        clarification: `Heard "Rating ${candidate}". Scores must be between 1 and 10, or say 'No view'.`,
+      };
+    } else if (NUMBER_WORDS[candidate] !== undefined) {
+      return { valid: true, score: NUMBER_WORDS[candidate], isNoView: false, rawText };
+    }
+  }
+
+  // 4. Out-of-Range Rejections (e.g. 0, 11-99, negative, or words like 'zero', 'eleven')
   const outOfRangeDigitMatch = clean.match(/\b(0|1[1-9]|[2-9]\d|\d{3,})\b/);
   if (outOfRangeDigitMatch) {
     return {

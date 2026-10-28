@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               <button
-                onClick={() => handleNavClick("rate")}
+                onClick={() => handleNavClick("colleges")}
                 className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
                   currentView === "rate"
                     ? "bg-warm-grey text-charcoal"
@@ -252,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               <button
-                onClick={() => handleNavClick("rate")}
+                onClick={() => handleNavClick("colleges")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
                   currentView === "rate"
                     ? "bg-warm-grey text-charcoal font-semibold"

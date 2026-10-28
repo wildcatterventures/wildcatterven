@@ -33,7 +33,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
         {/* Rate Your College Action */}
         <div
-          onClick={() => onNavigate("rate")}
+          onClick={() => onNavigate("colleges")}
           className="editorial-card p-5 cursor-pointer bg-card hover:-translate-y-0.5 transition-transform border-olive/30"
         >
           <div className="w-9 h-9 rounded bg-olive-light flex items-center justify-center text-charcoal mb-4">

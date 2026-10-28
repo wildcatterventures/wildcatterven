@@ -63,6 +63,7 @@ export const App: React.FC = () => {
         setCurrentView("colleges");
       } else if (path === "/rate") {
         setCurrentView("rate");
+        window.scrollTo({ top: 0, behavior: "auto" });
       } else if (path === "/" || path === "") {
         setCurrentView("home");
       }
@@ -76,17 +77,31 @@ export const App: React.FC = () => {
   const handleNavigate = (view: string, data?: any) => {
     if (view === "home") {
       window.history.pushState({}, "", "/");
+      setCurrentView("home");
     } else if (view === "colleges") {
       setSearchQuery(data?.query || "");
       window.history.pushState({}, "", "/colleges");
+      setCurrentView("colleges");
     } else if (view === "college_detail" && data?.collegeId) {
       setSelectedCollegeId(data.collegeId);
       window.history.pushState({}, "", `/colleges/${data.collegeId}`);
+      setCurrentView("college_detail");
     } else if (view === "rate") {
-      window.history.pushState({}, "", "/rate");
+      const targetCollegeId = data?.collegeId || selectedCollegeId;
+      if (targetCollegeId) {
+        setSelectedCollegeId(targetCollegeId);
+        window.history.pushState({}, "", "/rate");
+        setCurrentView("rate");
+      } else {
+        // Generic rate action without a selected college -> Navigate to /colleges
+        setSearchQuery("");
+        window.history.pushState({}, "", "/colleges");
+        setCurrentView("colleges");
+      }
+    } else {
+      setCurrentView(view);
     }
-    setCurrentView(view);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
 
   const handleHeroSearch = (query: string) => {
@@ -143,21 +158,18 @@ export const App: React.FC = () => {
               onSearch={handleHeroSearch}
               onOpenAssistantWithQuery={handleOpenAssistantWithQuery}
               onExplore={() => handleNavigate("colleges")}
-              onRate={() => handleNavigate("rate")}
+              onRate={() => handleNavigate("colleges")}
             />
             <HowItWorks
               onExplore={() => handleNavigate("colleges")}
-              onRate={() => handleNavigate("rate")}
+              onRate={() => handleNavigate("colleges")}
             />
             <FeaturedColleges
               colleges={previewColleges}
               loading={loadingPreview}
               onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
               onExploreAll={() => handleNavigate("colleges")}
-              onRateCollege={(id) => {
-                setSelectedCollegeId(id);
-                setCurrentView("rate");
-              }}
+              onRateCollege={(id) => handleNavigate("rate", { collegeId: id })}
             />
 
           </>
@@ -168,10 +180,7 @@ export const App: React.FC = () => {
           <CollegeList
             initialQuery={searchQuery}
             onSelectCollege={(id) => handleNavigate("college_detail", { collegeId: id })}
-            onRateCollege={(id) => {
-              setSelectedCollegeId(id);
-              setCurrentView("rate");
-            }}
+            onRateCollege={(id) => handleNavigate("rate", { collegeId: id })}
             onOpenUnknownModal={() => setIsUnknownModalOpen(true)}
           />
         )}
@@ -181,10 +190,7 @@ export const App: React.FC = () => {
           <CollegeDetail
             collegeId={selectedCollegeId}
             onBack={() => handleNavigate("colleges")}
-            onRate={(id) => {
-              setSelectedCollegeId(id);
-              setCurrentView("rate");
-            }}
+            onRate={(id) => handleNavigate("rate", { collegeId: id })}
             onAskAssistant={handleOpenAssistantWithQuery}
           />
         )}

@@ -37,6 +37,7 @@ import type {
 import { ParameterInput } from "./ParameterInput";
 import { ReviewSummary } from "./ReviewSummary";
 import { SubmissionSuccess } from "./SubmissionSuccess";
+import { VoiceRatingInstruction } from "./VoiceRatingInstruction";
 
 interface RatingWizardProps {
   session: RatingSessionResponse;
@@ -78,20 +79,12 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   // Concurrency & Lifecycle Protection Refs
   const controllerRef = useRef<SpeechSessionController | null>(null);
   const advanceTimerRef = useRef<any>(null);
-  const autoAdvanceDebounceRef = useRef<any>(null);
   const latestTranscriptRef = useRef<string>("");
   const isAdvancingRef = useRef<boolean>(false);
   const isSavingRef = useRef<boolean>(false);
   const currentQuestionIndexRef = useRef<number>(0);
   const voiceStartedRef = useRef<boolean>(false);
   const readAloudRef = useRef<boolean>(false);
-
-  const clearAutoAdvanceDebounce = useCallback(() => {
-    if (autoAdvanceDebounceRef.current) {
-      clearTimeout(autoAdvanceDebounceRef.current);
-      autoAdvanceDebounceRef.current = null;
-    }
-  }, []);
 
   // Sync refs with state
   useEffect(() => {
@@ -146,7 +139,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     return () => {
       mounted = false;
       stopSpeaking();
-      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
       }
@@ -155,13 +147,12 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         controllerRef.current = null;
       }
     };
-  }, [session.id, college.college_id, clearAutoAdvanceDebounce]);
+  }, [session.id, college.college_id]);
 
   // Clean teardown on unmount
   useEffect(() => {
     return () => {
       stopSpeaking();
-      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
       }
@@ -170,7 +161,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         controllerRef.current = null;
       }
     };
-  }, [clearAutoAdvanceDebounce]);
+  }, []);
 
   // Saves an answer through the backend API
   const handleAnswerChange = async (score: number | null, isNoView: boolean): Promise<boolean> => {
@@ -181,7 +172,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     setSavingAnswer(true);
 
     // Cancel pending voice progression if user manually taps
-    clearAutoAdvanceDebounce();
     if (advanceTimerRef.current) {
       clearTimeout(advanceTimerRef.current);
       advanceTimerRef.current = null;
@@ -230,7 +220,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       }
 
       // Teardown any existing controller cleanly
-      clearAutoAdvanceDebounce();
       if (controllerRef.current) {
         controllerRef.current.abort();
         controllerRef.current = null;
@@ -269,7 +258,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
         // 1. Navigation Commands
         if (parsed.isNavigation === "previous") {
-          clearAutoAdvanceDebounce();
           activeController?.abort();
           controllerRef.current = null;
           if (targetIndex > 0) {
@@ -285,7 +273,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         }
 
         if (parsed.isNavigation === "repeat") {
-          clearAutoAdvanceDebounce();
           activeController?.abort();
           controllerRef.current = null;
           announceOrPromptQuestion(targetIndex);
@@ -293,7 +280,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         }
 
         if (parsed.isNavigation === "review") {
-          clearAutoAdvanceDebounce();
           activeController?.abort();
           controllerRef.current = null;
           setVoiceStatus("idle");
@@ -302,7 +288,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         }
 
         if (parsed.isNavigation === "next") {
-          clearAutoAdvanceDebounce();
           activeController?.abort();
           controllerRef.current = null;
           if (targetIndex < parameters.length - 1) {
@@ -315,7 +300,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
         // 2. Invalid or Ambiguous Speech: Do NOT advance, do NOT store answer!
         if (!parsed.valid) {
-          clearAutoAdvanceDebounce();
           const clarifyMsg =
             parsed.clarification ||
             "I didn't catch a rating. Say a number from 1 to 10, or say 'No view'.";
@@ -341,7 +325,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
         // 3. Valid Rating Parsed: Lock against duplicate advancing
         isAdvancingRef.current = true;
-        clearAutoAdvanceDebounce();
         activeController?.stop();
         controllerRef.current = null;
         setVoiceStatus("confirming");
@@ -405,33 +388,15 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           setVoiceError(null);
           latestTranscriptRef.current = "";
         },
-        onInterimTranscript: (combined: string, isComplete?: boolean) => {
+        onInterimTranscript: (combined: string) => {
           if (isAdvancingRef.current) return;
           latestTranscriptRef.current = combined;
           setInterimTranscript(combined);
-
-          clearAutoAdvanceDebounce();
-
-          const parsed = parseSpokenRating(combined);
-          if (parsed.valid) {
-            if (isComplete || parsed.isNavigation) {
-              processSpokenTranscript(combined, controllerRef.current);
-            } else {
-              // Valid rating hypothesis (e.g. user said "2" or "two"):
-              // Wait 500ms for user to finish potential phrase (e.g. "two out of ten"), then commit
-              autoAdvanceDebounceRef.current = setTimeout(() => {
-                autoAdvanceDebounceRef.current = null;
-                processSpokenTranscript(combined, controllerRef.current);
-              }, 500);
-            }
-          }
         },
         onFinalTranscript: async (finalText: string) => {
-          clearAutoAdvanceDebounce();
           processSpokenTranscript(finalText, controllerRef.current);
         },
         onSilenceTimeout: (finalTranscript?: string) => {
-          clearAutoAdvanceDebounce();
           if (isAdvancingRef.current) return;
           const candidate = (finalTranscript || latestTranscriptRef.current || "").trim();
           if (candidate) {
@@ -442,13 +407,11 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           }
         },
         onError: (errMsg: string) => {
-          clearAutoAdvanceDebounce();
           if (isAdvancingRef.current) return;
           setVoiceStatus("error");
           setVoiceError(errMsg);
         },
         onEnd: () => {
-          clearAutoAdvanceDebounce();
           if (!isAdvancingRef.current && voiceStartedRef.current) {
             setVoiceStatus((curr) => (curr === "confirming" ? curr : "paused"));
           }
@@ -457,7 +420,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
       controllerRef.current = controller;
     },
-    [parameters, session.id, clearAutoAdvanceDebounce]
+    [parameters, session.id]
   );
 
   // Announces question if readAloud is enabled, then begins listening
@@ -466,7 +429,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       const param = parameters[targetIndex];
       if (!param) return;
 
-      clearAutoAdvanceDebounce();
       if (controllerRef.current) {
         controllerRef.current.abort();
         controllerRef.current = null;
@@ -491,7 +453,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
         startListeningForQuestion(targetIndex);
       }
     },
-    [parameters, startListeningForQuestion, clearAutoAdvanceDebounce]
+    [parameters, startListeningForQuestion]
   );
 
   // Automatically start voice listening when question changes in voice mode
@@ -508,7 +470,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
     announceOrPromptQuestion(currentIndex);
 
     return () => {
-      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;
@@ -519,7 +480,7 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
       }
       stopSpeaking();
     };
-  }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion, clearAutoAdvanceDebounce]);
+  }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion]);
 
   // Mode Switcher: Safely switches between Text and Voice while preserving answers
   const handleSwitchMode = (mode: "text" | "voice") => {
@@ -527,7 +488,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
     if (mode === "text") {
       stopSpeaking();
-      clearAutoAdvanceDebounce();
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;
@@ -571,7 +531,6 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
 
   // Pause listening
   const handlePauseListening = () => {
-    clearAutoAdvanceDebounce();
     if (controllerRef.current) {
       controllerRef.current.abort();
       controllerRef.current = null;
@@ -877,8 +836,13 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
           </div>
 
           {/* Active Voice Control & Live Feedback Panel */}
-          {inputMode === "voice" && voiceStarted && (
-            <div className="mb-6 p-3.5 sm:p-4 rounded-lg bg-warm-grey-light/70 border border-warm-grey shadow-subtle flex flex-col gap-3 animate-in fade-in duration-200">
+          {inputMode === "voice" && (
+            <>
+              {/* Prominent Red Voice-Rating Instruction (FIX 1) */}
+              <VoiceRatingInstruction className="mb-4" />
+
+              {voiceStarted && (
+                <div className="mb-6 p-3.5 sm:p-4 rounded-lg bg-warm-grey-light/70 border border-warm-grey shadow-subtle flex flex-col gap-3 animate-in fade-in duration-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
@@ -986,7 +950,9 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                 </div>
               </div>
             </div>
-          )}
+            )}
+          </>
+        )}
 
           {voiceError && (
             <div className="mb-4 p-3 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between">

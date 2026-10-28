@@ -239,7 +239,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
             className="btn-secondary min-h-[40px] text-xs py-2 px-3.5 font-medium flex items-center justify-center gap-1.5 whitespace-nowrap text-charcoal hover:border-charcoal hover:bg-card"
             title={`Rate ${college.name}`}
           >
-            <span>{hasRatings ? "Rate college" : "Write a review"}</span>
+            <span>Rate College</span>
           </button>
         </div>
       </div>
