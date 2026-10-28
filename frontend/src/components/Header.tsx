@@ -83,111 +83,117 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             {/* Logo & Tagline */}
             <div
-              className="cursor-pointer group flex items-baseline gap-2 sm:gap-3"
+              className="cursor-pointer group flex items-baseline gap-2 sm:gap-3 shrink-0"
               onClick={() => handleNavClick("home")}
             >
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-charcoal">
+              <div className="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap">
+                <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-charcoal whitespace-nowrap">
                   Campus Uncut
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-olive self-center" />
+                <span className="w-1.5 h-1.5 rounded-full bg-olive self-center shrink-0" />
               </div>
               <span className="hidden sm:inline-block text-xs text-charcoal-muted font-serif italic border-l border-warm-grey pl-3">
               </span>
             </div>
 
             {/* Desktop Navigation (>= md: 768px) */}
-            <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
-              <button
-                onClick={() => handleNavClick("match")}
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  currentView === "match"
-                    ? "bg-warm-grey text-charcoal font-semibold"
-                    : "text-charcoal hover:bg-warm-grey-light"
-                }`}
-              >
-                <Compass className="w-4 h-4 text-olive" />
-                <span>Find My Fit</span>
-              </button>
-
+            <nav className="hidden md:flex items-center gap-1 lg:gap-2 xl:gap-2.5">
+              {/* 1. Colleges first */}
               <button
                 onClick={() => handleNavClick("colleges")}
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                   currentView === "colleges"
                     ? "bg-warm-grey text-charcoal font-semibold"
                     : "text-charcoal hover:bg-warm-grey-light"
                 }`}
               >
-                <BookOpen className="w-4 h-4 text-charcoal-muted" />
-                <span>Colleges</span>
+                <BookOpen className="w-3.5 h-3.5 text-charcoal-muted shrink-0" />
+                <span className="whitespace-nowrap">Colleges</span>
               </button>
 
+              {/* 2. Rate Campus second */}
               <button
-                onClick={() => handleNavClick("leaderboard")}
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  currentView === "leaderboard"
-                    ? "bg-warm-grey text-charcoal font-semibold"
-                    : "text-charcoal hover:bg-warm-grey-light"
-                }`}
-              >
-                <Trophy className="w-4 h-4 text-charcoal-muted" />
-                <span>Leaderboard</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick("community")}
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  currentView === "community"
-                    ? "bg-warm-grey text-charcoal font-semibold"
-                    : "text-charcoal hover:bg-warm-grey-light"
-                }`}
-              >
-                <Users className="w-4 h-4 text-charcoal-muted" />
-                <span>Campus Circle</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick("colleges")}
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
+                onClick={() => handleNavClick("rate")}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                   currentView === "rate"
                     ? "bg-warm-grey text-charcoal font-semibold"
                     : "text-charcoal hover:bg-warm-grey-light"
                 }`}
               >
-                <MessageSquareQuote className="w-4 h-4 text-olive" />
-                <span>Rate Campus</span>
+                <MessageSquareQuote className="w-3.5 h-3.5 text-olive shrink-0" />
+                <span className="whitespace-nowrap">Rate Campus</span>
               </button>
 
+              {/* 3. Find My Fit */}
+              <button
+                onClick={() => handleNavClick("match")}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  currentView === "match"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-olive shrink-0" />
+                <span className="whitespace-nowrap">Find My Fit</span>
+              </button>
+
+              {/* 4. Leaderboard */}
+              <button
+                onClick={() => handleNavClick("leaderboard")}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  currentView === "leaderboard"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5 text-charcoal-muted shrink-0" />
+                <span className="whitespace-nowrap">Leaderboard</span>
+              </button>
+
+              {/* 5. Campus Circle */}
+              <button
+                onClick={() => handleNavClick("community")}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  currentView === "community"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-charcoal-muted shrink-0" />
+                <span className="whitespace-nowrap">Campus Circle</span>
+              </button>
+
+              {/* 6. Add College (xl screens) */}
               <button
                 onClick={onOpenUnknownModal}
                 title="Add an unlisted institution"
-                className="hidden xl:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light transition-colors"
+                className="hidden xl:flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-charcoal-muted hover:text-charcoal rounded hover:bg-warm-grey-light transition-colors whitespace-nowrap"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Add College</span>
+                <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Add College</span>
               </button>
 
               {/* Assistant Trigger Button */}
               <button
                 onClick={onToggleAssistant}
                 aria-label="Toggle Campus Intelligence Assistant"
-                className={`px-3 py-1.5 text-xs lg:text-sm font-medium rounded transition-all flex items-center gap-1.5 border ${
+                className={`px-2.5 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 border whitespace-nowrap ${
                   isAssistantOpen
                     ? "bg-charcoal text-paper border-charcoal shadow-sm"
                     : "bg-paper text-charcoal border-warm-grey hover:border-olive hover:bg-warm-grey-light"
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-olive" />
-                <span>Assistant</span>
+                <Sparkles className="w-3.5 h-3.5 text-olive shrink-0" />
+                <span className="whitespace-nowrap">Assistant</span>
               </button>
 
               {/* Database Connectivity Indicator */}
               <div
-                className="flex items-center gap-1.5 pl-2 lg:pl-3 border-l border-warm-grey text-[11px] font-mono text-charcoal-muted"
+                className="flex items-center gap-1.5 pl-2 border-l border-warm-grey text-[11px] font-mono text-charcoal-muted shrink-0 whitespace-nowrap"
                 title={`PostgreSQL state: ${dbStatus}`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${
+                  className={`w-2 h-2 rounded-full shrink-0 ${
                     dbStatus === "connected"
                       ? "bg-emerald-600"
                       : dbStatus === "checking"
@@ -195,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
                       : "bg-rose-500"
                   }`}
                 />
-                <span className="capitalize hidden lg:inline">{dbStatus}</span>
+                <span className="capitalize hidden xl:inline whitespace-nowrap">{dbStatus}</span>
               </div>
             </nav>
 
@@ -278,18 +284,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Home</span>
               </button>
 
-              <button
-                onClick={() => handleNavClick("match")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
-                  currentView === "match"
-                    ? "bg-warm-grey text-charcoal font-semibold"
-                    : "text-charcoal hover:bg-warm-grey-light"
-                }`}
-              >
-                <Compass className="w-4 h-4 text-olive" />
-                <span>Find My Fit (Match Engine)</span>
-              </button>
-
+              {/* 1. Colleges first */}
               <button
                 onClick={() => handleNavClick("colleges")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
@@ -302,6 +297,33 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Explore Colleges</span>
               </button>
 
+              {/* 2. Rate a College second */}
+              <button
+                onClick={() => handleNavClick("rate")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
+                  currentView === "rate"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <MessageSquareQuote className="w-4 h-4 text-olive" />
+                <span>Rate a College</span>
+              </button>
+
+              {/* 3. Find My Fit */}
+              <button
+                onClick={() => handleNavClick("match")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
+                  currentView === "match"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <Compass className="w-4 h-4 text-olive" />
+                <span>Find My Fit (Match Engine)</span>
+              </button>
+
+              {/* 4. Leaderboard */}
               <button
                 onClick={() => handleNavClick("leaderboard")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
@@ -314,6 +336,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Leaderboard (20+ Responses)</span>
               </button>
 
+              {/* 5. Campus Circle */}
               <button
                 onClick={() => handleNavClick("community")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
@@ -324,18 +347,6 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Users className="w-4 h-4 text-charcoal-muted" />
                 <span>Campus Circle (Community)</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick("colleges")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
-                  currentView === "rate"
-                    ? "bg-warm-grey text-charcoal font-semibold"
-                    : "text-charcoal hover:bg-warm-grey-light"
-                }`}
-              >
-                <MessageSquareQuote className="w-4 h-4 text-olive" />
-                <span>Rate a College</span>
               </button>
 
               <button
