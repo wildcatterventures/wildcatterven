@@ -76,6 +76,7 @@ export const CollegeList: React.FC<CollegeListProps> = ({
 
     // SECTION 3.A: Immediately clear previous search text on new session
     setQuery("");
+    lastFetchedRef.current = null;
 
     const controller = startSpeechSession({
       silenceTimeoutMs: 3500,
@@ -88,8 +89,16 @@ export const CollegeList: React.FC<CollegeListProps> = ({
         setQuery(combined);
       },
       onSilenceTimeout: (finalTranscript) => {
-        const target = finalTranscript || query;
+        const target = (finalTranscript || query).trim();
         if (target) {
+          setQuery(target);
+          fetchColleges(target, includeDemo);
+        }
+      },
+      onFinalTranscript: (finalTranscript) => {
+        const target = (finalTranscript || query).trim();
+        if (target) {
+          setQuery(target);
           fetchColleges(target, includeDemo);
         }
       },

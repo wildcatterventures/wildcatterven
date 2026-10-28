@@ -93,8 +93,19 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
       },
       onSilenceTimeout: (finalTranscript) => {
         // SECTION 3.C & 3.D: Auto stop and search after 3.5s silence
-        const target = finalTranscript || query;
-        executeSearch(target);
+        const target = (finalTranscript || query).trim();
+        if (target) {
+          setQuery(target);
+          executeSearch(target);
+        }
+      },
+      onFinalTranscript: (finalTranscript) => {
+        // Handle pending final results if speech engine finalized and stopped before silence timeout
+        const target = (finalTranscript || query).trim();
+        if (target) {
+          setQuery(target);
+          executeSearch(target);
+        }
       },
       onError: (errorMsg) => {
         sessionControllerRef.current = null;

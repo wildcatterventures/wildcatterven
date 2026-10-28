@@ -384,9 +384,15 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           setVoiceError(null);
         },
         onTranscript: (transcript) => {
+          const clean = transcript.trim();
           const base = baseInputRef.current;
-          const combined = base ? `${base} ${transcript.trim()}` : transcript;
-          setInput(combined);
+          if (!base) {
+            setInput(clean);
+          } else if (clean.toLowerCase().startsWith(base.toLowerCase())) {
+            setInput(clean);
+          } else {
+            setInput(`${base} ${clean}`.trim());
+          }
         },
         onError: (errText) => {
           setIsListening(false);

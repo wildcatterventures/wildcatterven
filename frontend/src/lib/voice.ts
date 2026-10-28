@@ -97,11 +97,149 @@ export interface SpeechSessionOptions {
   onEnd?: () => void;
 }
 
+export interface TranscriptSnapshot {
+  finalTranscript: string;
+  interimTranscript: string;
+  combinedTranscript: string;
+  isComplete: boolean;
+}
+
+/**
+ * Authoritative, session-scoped transcript assembler.
+ * Reconstructs the transcript from Web Speech API recognition events by tracking
+ * segment indices, keeping finalized and interim segments separate, replacing interim
+ * hypotheses when finalized, and ensuring no segment is ever duplicated.
+ */
+export class TranscriptAssembler {
+  private finalSegments: Map<number, string> = new Map();
+  private interimSegments: Map<number, string> = new Map();
+
+  /**
+   * Resets the assembler for a new recognition session.
+   */
+  public reset(): void {
+    this.finalSegments.clear();
+    this.interimSegments.clear();
+  }
+
+  /**
+   * Returns current finalized transcript.
+   */
+  public getFinalTranscript(): string {
+    return this.getSnapshot().finalTranscript;
+  }
+
+  /**
+   * Returns current combined transcript (final + interim).
+   */
+  public getCombinedTranscript(): string {
+    return this.getSnapshot().combinedTranscript;
+  }
+
+  /**
+   * Processes a Web Speech API SpeechRecognitionEvent (or test mock object).
+   * Supports both full results snapshots and incremental updates using event.resultIndex.
+   */
+  public processEvent(event: any): TranscriptSnapshot {
+    if (!event || !event.results) {
+      return this.getSnapshot();
+    }
+
+    const results = event.results;
+    const startIndex =
+      typeof event.resultIndex === "number" && event.resultIndex >= 0
+        ? event.resultIndex
+        : 0;
+
+    // Interim segments are transient hypotheses from the speech recognizer.
+    // Clear previously stored interim results for this update.
+    this.interimSegments.clear();
+
+    // Check if the results list is an incremental slice where index 0 represents startIndex
+    // (i.e. results.length <= startIndex) or standard 0-indexed full list.
+    const isSlice = results.length <= startIndex && results.length > 0;
+
+    for (let i = isSlice ? 0 : startIndex; i < results.length; ++i) {
+      const res = results[i];
+      if (!res) continue;
+
+      const alt = res[0] ?? res;
+      const transcript = (alt.transcript ?? alt.text ?? "").trim();
+      if (!transcript) continue;
+
+      const segIndex = isSlice ? startIndex + i : i;
+
+      if (res.isFinal) {
+        // When an interim segment becomes final, it replaces any interim version
+        // and is stored permanently in finalSegments by its segment index.
+        this.finalSegments.set(segIndex, transcript);
+        this.interimSegments.delete(segIndex);
+      } else {
+        // Interim segment stored by its segment index
+        this.interimSegments.set(segIndex, transcript);
+      }
+    }
+
+    return this.getSnapshot();
+  }
+
+  /**
+   * Reconstructs the transcript parts in strictly sorted index order.
+   */
+  public getSnapshot(): TranscriptSnapshot {
+    const sortedFinalIndices = Array.from(this.finalSegments.keys()).sort((a, b) => a - b);
+    const finalParts: string[] = [];
+    for (const idx of sortedFinalIndices) {
+      const text = this.finalSegments.get(idx);
+      if (text) {
+        finalParts.push(text);
+      }
+    }
+
+    const sortedInterimIndices = Array.from(this.interimSegments.keys()).sort((a, b) => a - b);
+    const interimParts: string[] = [];
+    for (const idx of sortedInterimIndices) {
+      const text = this.interimSegments.get(idx);
+      if (text) {
+        interimParts.push(text);
+      }
+    }
+
+    const finalTranscript = finalParts.join(" ").trim();
+    const interimTranscript = interimParts.join(" ").trim();
+
+    let combinedTranscript = "";
+    if (finalTranscript && interimTranscript) {
+      combinedTranscript = `${finalTranscript} ${interimTranscript}`;
+    } else {
+      combinedTranscript = finalTranscript || interimTranscript;
+    }
+
+    const isComplete = interimParts.length === 0 && Boolean(finalTranscript);
+
+    return {
+      finalTranscript,
+      interimTranscript,
+      combinedTranscript,
+      isComplete,
+    };
+  }
+}
+
+/**
+ * Functional convenience helper for assembling speech recognition results.
+ */
+export function assembleSpeechResults(event: any, assembler?: TranscriptAssembler): TranscriptSnapshot {
+  const instance = assembler ?? new TranscriptAssembler();
+  return instance.processEvent(event);
+}
+
 export interface SpeechSessionController {
   sessionId: number;
   stop: () => void;
   abort: () => void;
   getState: () => SpeechState;
+  getTranscript?: () => string;
 }
 
 // Global active session tracker to ensure no competing microphone instances
@@ -109,6 +247,7 @@ let globalSessionCounter = 0;
 let globalActiveSession: {
   id: number;
   recognition: any;
+  assembler: TranscriptAssembler;
   silenceTimer: any;
   state: SpeechState;
   finalTranscript: string;
@@ -164,6 +303,7 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
       stop: () => {},
       abort: () => {},
       getState: () => "error",
+      getTranscript: () => "",
     };
   }
 
@@ -179,6 +319,7 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
   const sessionRecord = {
     id: sessionId,
     recognition,
+    assembler: new TranscriptAssembler(),
     silenceTimer: null as any,
     state: "starting" as SpeechState,
     finalTranscript: "",
@@ -209,8 +350,8 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
       sessionRecord.silenceFired = true;
       setState("processing");
 
-      // Extract the best available transcript before stopping
-      const finalSubmission = (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
+      // Extract the best available transcript before stopping (including pending interim words)
+      const finalSubmission = (sessionRecord.latestCombined || sessionRecord.finalTranscript).trim();
 
       try {
         if (sessionRecord.hasStarted) {
@@ -250,29 +391,14 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
     // Reset silence timer because user is actively speaking and results are streaming
     resetSilenceTimer();
 
-    let finalParts = "";
-    let interimParts = "";
+    const snapshot = sessionRecord.assembler.processEvent(event);
+    sessionRecord.latestCombined = snapshot.combinedTranscript;
 
-    for (let i = 0; i < event.results.length; ++i) {
-      const res = event.results[i];
-      if (!res || !res[0]) continue;
-      const transcript = res[0].transcript || "";
-      if (res.isFinal) {
-        finalParts += (finalParts ? " " : "") + transcript.trim();
-      } else {
-        interimParts += (interimParts ? " " : "") + transcript.trim();
-      }
+    if (snapshot.finalTranscript) {
+      sessionRecord.finalTranscript = snapshot.finalTranscript;
     }
 
-    const currentCombined = (finalParts + (finalParts && interimParts ? " " : "") + interimParts).trim();
-    sessionRecord.latestCombined = currentCombined;
-
-    if (finalParts) {
-      sessionRecord.finalTranscript = finalParts.trim();
-    }
-
-    const isComplete = !interimParts && Boolean(finalParts);
-    options.onInterimTranscript?.(currentCombined, isComplete);
+    options.onInterimTranscript?.(snapshot.combinedTranscript, snapshot.isComplete);
   };
 
   recognition.onerror = (event: any) => {
@@ -299,7 +425,7 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
     if (globalActiveSession?.id !== sessionId) return;
     clearSilenceTimer();
 
-    const finalized = (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
+    const finalized = (sessionRecord.latestCombined || sessionRecord.finalTranscript).trim();
     if (finalized && !sessionRecord.userAborted && !sessionRecord.silenceFired) {
       options.onFinalTranscript?.(finalized);
     }
@@ -358,6 +484,9 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
     },
     getState: () => {
       return sessionRecord.state;
+    },
+    getTranscript: () => {
+      return (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
     },
   };
 
