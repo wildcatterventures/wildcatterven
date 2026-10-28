@@ -190,17 +190,6 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
       {/* 2. Left-Anchored Editorial & Interactive Content Container */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6 sm:py-12 md:py-20 lg:py-24">
         <div className="max-w-xl lg:max-w-2xl flex flex-col justify-center">
-          
-          {/* Small Editorial Header Label */}
-          <div className="inline-flex items-center gap-2 mb-2.5 sm:mb-4 self-start flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider font-bold bg-olive-light text-olive border border-olive/30">
-              Vol. 01 • Student Intelligence
-            </span>
-            <span className="text-[11px] font-mono text-charcoal-muted">
-              Mumbai • Bhopal • Coimbatore
-            </span>
-          </div>
-
           {/* Display Headline */}
           <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl lg:text-[3.75rem] font-bold tracking-tight text-charcoal mb-2.5 sm:mb-4 leading-[1.12]">
             College life. <br />

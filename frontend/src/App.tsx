@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { NoticeBanner } from "./components/NoticeBanner";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { UnknownCollegeModal } from "./components/UnknownCollegeModal";
@@ -137,10 +136,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-paper text-charcoal font-sans">
-      {/* 1. Persistent Unverified Affiliation Notice */}
-      <NoticeBanner />
-
-      {/* 2. Editorial Header */}
+      {/* 1. Editorial Header */}
       <Header
         currentView={currentView}
         onNavigate={handleNavigate}
