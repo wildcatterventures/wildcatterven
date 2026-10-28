@@ -1,7 +1,11 @@
 import React from "react";
 import { ShieldCheck, HeartHandshake, Database } from "lucide-react";
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="border-t border-warm-grey bg-paper text-charcoal py-8 sm:py-12 px-4 sm:px-6 lg:px-8 mt-10 sm:mt-16 md:mt-20">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-8">
@@ -36,9 +40,17 @@ export const Footer: React.FC = () => {
           <h4 className="font-sans text-xs uppercase tracking-wider font-semibold text-charcoal mb-3">
             Scoring Transparency
           </h4>
-          <p className="text-xs text-charcoal-muted leading-relaxed">
+          <p className="text-xs text-charcoal-muted leading-relaxed mb-3">
             A college score begins at 100. Each qualifying respondent contributes once. Each completed block of 20 low contributions drops the score by 1; each completed block of 20 high contributions raises it by 1.
           </p>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate("scoring_demo")}
+              className="text-xs font-semibold text-olive hover:text-charcoal inline-flex items-center gap-1 transition-colors underline"
+            >
+              <span>Explore Isolated Scoring Demo (PICT &amp; VJTI) &rarr;</span>
+            </button>
+          )}
         </div>
       </div>
 

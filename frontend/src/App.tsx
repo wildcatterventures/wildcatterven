@@ -14,6 +14,7 @@ import { RatingWizard } from "./features/rating/RatingWizard";
 import { MatchEngine } from "./features/match/MatchEngine";
 import { EvidenceLeaderboard } from "./features/leaderboard/EvidenceLeaderboard";
 import { CampusCircle } from "./features/community/CampusCircle";
+import { ScoringProgressionDemo } from "./features/demo/ScoringProgressionDemo";
 import { api } from "./lib/api";
 import { setActiveSessionId } from "./lib/storage";
 import type { CollegeSummary, CollegeDetail as ICollegeDetail } from "./types/college";
@@ -69,6 +70,8 @@ export const App: React.FC = () => {
         setCurrentView("leaderboard");
       } else if (path === "/community" || path === "/circle") {
         setCurrentView("community");
+      } else if (path === "/scoring-demo" || path === "/demo/scoring") {
+        setCurrentView("scoring_demo");
       } else if (path === "/rate") {
         setCurrentView("rate");
         window.scrollTo({ top: 0, behavior: "auto" });
@@ -99,6 +102,9 @@ export const App: React.FC = () => {
     } else if (view === "community" || view === "circle") {
       window.history.pushState({}, "", "/community");
       setCurrentView("community");
+    } else if (view === "scoring_demo") {
+      window.history.pushState({}, "", "/scoring-demo");
+      setCurrentView("scoring_demo");
     } else if (view === "college_detail" && data?.collegeId) {
       setSelectedCollegeId(data.collegeId);
       window.history.pushState({}, "", `/colleges/${data.collegeId}`);
@@ -178,6 +184,7 @@ export const App: React.FC = () => {
             <HowItWorks
               onExplore={() => handleNavigate("colleges")}
               onRate={() => handleNavigate("colleges")}
+              onOpenScoringDemo={() => handleNavigate("scoring_demo")}
             />
             <FeaturedColleges
               colleges={previewColleges}
@@ -188,6 +195,11 @@ export const App: React.FC = () => {
             />
 
           </>
+        )}
+
+        {/* ISOLATED SCORING PROGRESSION DEMO */}
+        {currentView === "scoring_demo" && (
+          <ScoringProgressionDemo onBackToHome={() => handleNavigate("home")} />
         )}
 
         {/* UNCUT MATCH ENGINE VIEW */}
@@ -257,7 +269,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* 4. Footer */}
-      <Footer />
+      <Footer onNavigate={handleNavigate} />
 
       {/* 5. Unknown College Creation Modal */}
       <UnknownCollegeModal

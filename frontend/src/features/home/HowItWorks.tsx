@@ -4,9 +4,10 @@ import { ListFilter, ShieldCheck, Layers, EyeOff, ArrowRight } from "lucide-reac
 interface HowItWorksProps {
   onExplore: () => void;
   onRate: () => void;
+  onOpenScoringDemo?: () => void;
 }
 
-export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => {
+export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate, onOpenScoringDemo }) => {
   return (
     <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-warm-grey">
       {/* Editorial Section Masthead */}
@@ -93,6 +94,14 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onExplore, onRate }) => 
             <p className="text-xs text-charcoal-muted leading-relaxed font-sans">
               Individual ratings never move the score immediately. The official score adjusts by exactly +1 or -1 point only when a verified threshold block of 20 student submissions is completed.
             </p>
+            {onOpenScoringDemo && (
+              <button
+                onClick={onOpenScoringDemo}
+                className="mt-2 text-[11px] font-semibold text-terracotta hover:underline inline-flex items-center gap-1"
+              >
+                <span>Test in Scoring Demo (PICT &amp; VJTI) &rarr;</span>
+              </button>
+            )}
           </div>
           <div className="mt-4 pt-3 border-t border-warm-grey font-mono text-[11px] text-charcoal-muted">
             Deterministic Engine
