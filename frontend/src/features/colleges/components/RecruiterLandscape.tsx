@@ -2,6 +2,7 @@ import React from "react";
 import { Briefcase, Building, ExternalLink, FileText, Info } from "lucide-react";
 import type { CollegeDetail as CollegeDetailType } from "../../../types/college";
 import type { InstitutionalDossier, RecruiterCompany } from "../collegeDossierData";
+import { openExternalUrl, isNativePlatform } from "../../../lib/externalLinks";
 
 interface RecruiterLandscapeProps {
   college: CollegeDetailType;
@@ -73,8 +74,9 @@ export const RecruiterLandscape: React.FC<RecruiterLandscapeProps> = ({
                     <span className="font-mono">{recruiter.season}</span>
                     <a
                       href={recruiter.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={isNativePlatform() ? "_self" : "_blank"}
+                      rel={isNativePlatform() ? undefined : "noopener noreferrer"}
+                      onClick={(e) => openExternalUrl(recruiter.sourceUrl, e)}
                       className="text-olive hover:text-charcoal inline-flex items-center gap-0.5 group/link"
                       title={`Verify via ${recruiter.sourceLabel}`}
                     >
@@ -119,8 +121,9 @@ export const RecruiterLandscape: React.FC<RecruiterLandscapeProps> = ({
                   <strong>{dossier.placementSummary.placementCellName}</strong> (
                   <a
                     href={dossier.placementSummary.reportUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target={isNativePlatform() ? "_self" : "_blank"}
+                    rel={isNativePlatform() ? undefined : "noopener noreferrer"}
+                    onClick={(e) => openExternalUrl(dossier.placementSummary.reportUrl, e)}
                     className="text-olive underline hover:text-charcoal inline-flex items-center gap-0.5"
                   >
                     view official report portal

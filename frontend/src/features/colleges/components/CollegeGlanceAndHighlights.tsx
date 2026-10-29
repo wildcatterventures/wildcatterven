@@ -2,6 +2,7 @@ import React from "react";
 import { Landmark, ExternalLink, Sparkles } from "lucide-react";
 import type { CollegeDetail as CollegeDetailType } from "../../../types/college";
 import type { InstitutionalDossier } from "../collegeDossierData";
+import { openExternalUrl, isNativePlatform } from "../../../lib/externalLinks";
 
 interface CollegeGlanceAndHighlightsProps {
   college: CollegeDetailType;
@@ -160,8 +161,9 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
                     <span className="text-charcoal-muted">Evidence source:</span>
                     <a
                       href={feature.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={isNativePlatform() ? "_self" : "_blank"}
+                      rel={isNativePlatform() ? undefined : "noopener noreferrer"}
+                      onClick={(e) => openExternalUrl(feature.sourceUrl, e)}
                       className="text-olive hover:text-charcoal hover:underline inline-flex items-center gap-1 font-medium"
                       title={`Verify at ${feature.sourceName}`}
                     >

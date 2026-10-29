@@ -66,28 +66,28 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
         description: "Dedicated on-campus deep-tech business incubator operational since 2004, having nurtured over 200 science and engineering startups with extensive prototyping laboratories.",
         category: "research",
         sourceName: "SINE IIT Bombay Official Portal",
-        sourceUrl: "https://sineiitb.org",
+        sourceUrl: "https://www.sineiitb.org",
       },
       {
         title: "National Centre for Aerospace Innovation & Research (NCAIR)",
         description: "Joint research consortium established with the Department of Science & Technology (DST) and international aerospace leaders for high-precision manufacturing and composites research.",
         category: "facility",
         sourceName: "NCAIR IITB Research Cell",
-        sourceUrl: "https://ncair.iitb.ac.in",
+        sourceUrl: "https://www.aero.iitb.ac.in",
       },
       {
         title: "Pratham Student Satellite Programme",
         description: "Student-engineered space mission designed and built entirely by multidisciplinary undergraduate teams, successfully launched into polar sun-synchronous orbit by ISRO's PSLV-C35.",
         category: "initiative",
         sourceName: "ISRO PSLV-C35 Mission Archives",
-        sourceUrl: "https://www.isro.gov.in",
+        sourceUrl: "https://www.isro.gov.in/PRATHAM.html",
       },
       {
         title: "Centre for Machine Intelligence and Data Science (C-MInDS)",
         description: "Advanced cross-departmental hub conducting fundamental artificial intelligence research, high-performance computing, and natural language processing applications.",
         category: "academic",
         sourceName: "IITB Academic Council",
-        sourceUrl: "https://www.iitb.ac.in/en/academics/centres",
+        sourceUrl: "https://www.minds.iitb.ac.in",
       },
     ],
     placementSummary: {
@@ -107,7 +107,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     campusFootprint: "Historic riverside campus on the Mula river, Shivajinagar",
     locationContext: "Central Pune heritage quarter at the historic river confluence",
     primaryFocus: "Core Engineering Disciplines, Metallurgy, Civil & Computing",
-    officialWebsite: "https://www.coep.org.in",
+    officialWebsite: "https://www.coeptech.ac.in",
     verifiedAccreditation: "NAAC A+ Grade • Historic Second Oldest Engineering School in India",
     distinctiveFeatures: [
       {
@@ -115,7 +115,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
         description: "Founded in 1854 as the Poona Engineering Class, it is the second-oldest technical school in India and the alma mater of Bharat Ratna Sir M. Visvesvaraya, in whose honour National Engineers' Day is celebrated.",
         category: "heritage",
         sourceName: "COEP Historical Archives",
-        sourceUrl: "https://www.coep.org.in/history",
+        sourceUrl: "https://www.coeptech.ac.in/about-us/about-university/",
       },
       {
         title: "Bhau Institute of Innovation, Entrepreneurship & Leadership",
@@ -129,20 +129,20 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
         description: "Student team conceptualized, engineered, and ground-tested Swayam, a 1-U pico-satellite launched into orbit by ISRO's PSLV-C34 to demonstrate point-to-point digital communication.",
         category: "initiative",
         sourceName: "COEP Satellite Team / ISRO",
-        sourceUrl: "https://www.coep.org.in/satellite",
+        sourceUrl: "https://www.isro.gov.in/SWAYAM.html",
       },
       {
         title: "MindSpark Technical Symposium",
         description: "Western India's premier annual student technical colloquium hosting national engineering exhibitions, hackathons, and design challenges.",
         category: "academic",
         sourceName: "COEP Student Gymkhana",
-        sourceUrl: "https://www.coep.org.in",
+        sourceUrl: "https://www.coeptech.ac.in",
       },
     ],
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Training & Placement Cell, COEP Technological University",
-      reportUrl: "https://www.coep.org.in/placement",
+      reportUrl: "https://www.coeptech.ac.in/placement/",
       overview: "Hosts over 150 recruiters annually across automotive R&D, structural engineering, semiconductor design, and cloud software engineering.",
     },
   },
@@ -184,7 +184,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Training and Placement Office (TPO), VJTI Mumbai",
-      reportUrl: "https://vjti.ac.in/training-and-placement",
+      reportUrl: "https://vjti.ac.in/training-and-placement-office/",
       overview: "Longstanding institutional recruiting relations across international investment banks, automotive consortia, and enterprise systems.",
     },
   },
@@ -219,7 +219,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Training & Placement Cell, SPIT Mumbai",
-      reportUrl: "https://www.spit.ac.in/placement",
+      reportUrl: "https://www.spit.ac.in/placements/",
       overview: "Consistently recognized for top-tier software engineering, cloud computing, and financial technology campus placements in Mumbai.",
     },
   },
@@ -254,7 +254,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Training & Placement Department, PICT",
-      reportUrl: "https://pict.edu/placement",
+      reportUrl: "https://pict.edu/placement/",
       overview: "Known across Maharashtra for dense recruitment by multinational cloud infrastructure, financial software, and algorithmic trading firms.",
     },
   },
@@ -289,7 +289,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Training & Placement Cell, SFIT",
-      reportUrl: "https://www.sfit.ac.in/placements.php",
+      reportUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
       overview: "Active annual recruitment with enterprise IT consulting, financial services, and product development companies.",
     },
   },
@@ -303,7 +303,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     campusFootprint: "90-acre scenic campus in Vishrambag, Sangli",
     locationContext: "Western Maharashtra regional technical anchor",
     primaryFocus: "Civil, Mechanical, Electrical, Electronics & Computer Science",
-    officialWebsite: "https://www.walchandsangli.ac.in",
+    officialWebsite: "https://walchandsangli.ac.in/",
     verifiedAccreditation: "Autonomous College • NAAC A Grade",
     distinctiveFeatures: [
       {
@@ -311,20 +311,20 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
         description: "Named after pioneering Indian industrialist Seth Walchand Hirachand, reflecting a continuous 75-year tradition of core industrial nation-building.",
         category: "heritage",
         sourceName: "WCE Administrative Board",
-        sourceUrl: "https://www.walchandsangli.ac.in",
+        sourceUrl: "https://walchandsangli.ac.in/",
       },
       {
         title: "Southern Maharashtra Regional Technology Anchor",
         description: "The 90-acre residential campus houses extensive heavy engineering workshops, fluid mechanics flumes, and regional material testing laboratories.",
         category: "facility",
         sourceName: "WCE Campus Profile",
-        sourceUrl: "https://www.walchandsangli.ac.in",
+        sourceUrl: "https://walchandsangli.ac.in/",
       },
     ],
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Department of Training & Placement, WCE Sangli",
-      reportUrl: "https://www.walchandsangli.ac.in/placement.php",
+      reportUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
       overview: "Anchors recruitment in Western Maharashtra with heavy machinery, automotive manufacturers, and digital engineering enterprises.",
     },
   },
@@ -359,7 +359,7 @@ export const INSTITUTIONAL_DOSSIERS: Record<string, InstitutionalDossier> = {
     placementSummary: {
       season: "2023–24 Placement Season",
       placementCellName: "Placement Cell, Vidyalankar Institute of Technology",
-      reportUrl: "https://vit.edu.in/placements",
+      reportUrl: "https://vit.edu.in/placement/",
       overview: "Broad recruiter participation across digital product firms, analytics consultancies, and financial technology services.",
     },
   },
@@ -460,7 +460,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Bajaj Auto",
@@ -468,7 +468,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Microsoft",
@@ -476,7 +476,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Siemens",
@@ -484,7 +484,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Mastercard",
@@ -492,7 +492,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Deutsche Bank",
@@ -500,7 +500,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Texas Instruments",
@@ -508,7 +508,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
     {
       name: "Cummins India",
@@ -516,7 +516,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Report",
       sourceLabel: "COEP Placement Records",
-      sourceUrl: "https://www.coep.org.in/placement",
+      sourceUrl: "https://www.coeptech.ac.in/placement/",
     },
   ],
 
@@ -527,7 +527,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Citi India",
@@ -535,7 +535,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Bank of America",
@@ -543,7 +543,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Samsung R&D",
@@ -551,7 +551,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Texas Instruments",
@@ -559,7 +559,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Larsen & Toubro",
@@ -567,7 +567,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
     {
       name: "Rakuten",
@@ -575,7 +575,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "TPO Annual Placement Report",
       sourceLabel: "VJTI Training & Placement Office",
-      sourceUrl: "https://vjti.ac.in/training-and-placement",
+      sourceUrl: "https://vjti.ac.in/training-and-placement-office/",
     },
   ],
 
@@ -586,7 +586,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
     {
       name: "J.P. Morgan Chase",
@@ -594,7 +594,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
     {
       name: "Oracle",
@@ -602,7 +602,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
     {
       name: "PhonePe",
@@ -610,7 +610,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
     {
       name: "Barclays",
@@ -618,7 +618,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
     {
       name: "WorkIndia",
@@ -626,7 +626,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Training & Placement Cell Summary",
       sourceLabel: "SPIT Placement Report",
-      sourceUrl: "https://www.spit.ac.in/placement",
+      sourceUrl: "https://www.spit.ac.in/placements/",
     },
   ],
 
@@ -637,7 +637,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
     {
       name: "Amazon",
@@ -645,7 +645,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
     {
       name: "Veritas",
@@ -653,7 +653,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
     {
       name: "Mastercard",
@@ -661,7 +661,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
     {
       name: "PhonePe",
@@ -669,7 +669,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
     {
       name: "Arcesium",
@@ -677,7 +677,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Published Recruiter Statistics",
       sourceLabel: "PICT Placement Cell",
-      sourceUrl: "https://pict.edu/placement",
+      sourceUrl: "https://pict.edu/placement/",
     },
   ],
 
@@ -688,7 +688,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Cell Records",
       sourceLabel: "SFIT Placement Cell",
-      sourceUrl: "https://www.sfit.ac.in/placements.php",
+      sourceUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
     },
     {
       name: "LTI-Mindtree",
@@ -696,7 +696,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Cell Records",
       sourceLabel: "SFIT Placement Cell",
-      sourceUrl: "https://www.sfit.ac.in/placements.php",
+      sourceUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
     },
     {
       name: "Capgemini",
@@ -704,7 +704,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Cell Records",
       sourceLabel: "SFIT Placement Cell",
-      sourceUrl: "https://www.sfit.ac.in/placements.php",
+      sourceUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
     },
     {
       name: "Hexaware",
@@ -712,7 +712,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Cell Records",
       sourceLabel: "SFIT Placement Cell",
-      sourceUrl: "https://www.sfit.ac.in/placements.php",
+      sourceUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
     },
     {
       name: "Zeus Learning",
@@ -720,7 +720,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Cell Records",
       sourceLabel: "SFIT Placement Cell",
-      sourceUrl: "https://www.sfit.ac.in/placements.php",
+      sourceUrl: "https://www.sfit.ac.in/Placement%20Summary.php",
     },
   ],
 
@@ -731,7 +731,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Department Annual Report",
       sourceLabel: "WCE Training & Placement",
-      sourceUrl: "https://www.walchandsangli.ac.in/placement.php",
+      sourceUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
     },
     {
       name: "John Deere",
@@ -739,7 +739,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Department Annual Report",
       sourceLabel: "WCE Training & Placement",
-      sourceUrl: "https://www.walchandsangli.ac.in/placement.php",
+      sourceUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
     },
     {
       name: "Eaton",
@@ -747,7 +747,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Department Annual Report",
       sourceLabel: "WCE Training & Placement",
-      sourceUrl: "https://www.walchandsangli.ac.in/placement.php",
+      sourceUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
     },
     {
       name: "Mercedes-Benz R&D",
@@ -755,7 +755,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Department Annual Report",
       sourceLabel: "WCE Training & Placement",
-      sourceUrl: "https://www.walchandsangli.ac.in/placement.php",
+      sourceUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
     },
     {
       name: "Atlas Copco",
@@ -763,7 +763,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "T&P Department Annual Report",
       sourceLabel: "WCE Training & Placement",
-      sourceUrl: "https://www.walchandsangli.ac.in/placement.php",
+      sourceUrl: "https://walchandsangli.ac.in/student-careers/career-development-cell/placement-in-wce/",
     },
   ],
 
@@ -774,7 +774,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Overview Documentation",
       sourceLabel: "VIT Placement Cell",
-      sourceUrl: "https://vit.edu.in/placements",
+      sourceUrl: "https://vit.edu.in/placement/",
     },
     {
       name: "Ugam Solutions",
@@ -782,7 +782,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Overview Documentation",
       sourceLabel: "VIT Placement Cell",
-      sourceUrl: "https://vit.edu.in/placements",
+      sourceUrl: "https://vit.edu.in/placement/",
     },
     {
       name: "Capgemini",
@@ -790,7 +790,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Overview Documentation",
       sourceLabel: "VIT Placement Cell",
-      sourceUrl: "https://vit.edu.in/placements",
+      sourceUrl: "https://vit.edu.in/placement/",
     },
     {
       name: "Nomura",
@@ -798,7 +798,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Overview Documentation",
       sourceLabel: "VIT Placement Cell",
-      sourceUrl: "https://vit.edu.in/placements",
+      sourceUrl: "https://vit.edu.in/placement/",
     },
     {
       name: "LTI-Mindtree",
@@ -806,7 +806,7 @@ export const COLLEGE_RECRUITERS: Record<string, RecruiterCompany[]> = {
       season: "2023–24 Season",
       evidenceType: "Placement Overview Documentation",
       sourceLabel: "VIT Placement Cell",
-      sourceUrl: "https://vit.edu.in/placements",
+      sourceUrl: "https://vit.edu.in/placement/",
     },
   ],
 };

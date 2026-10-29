@@ -4,6 +4,7 @@ import type { CollegeDetail as CollegeDetailType } from "../../../types/college"
 import { DemoBadge } from "../../../components/DemoBadge";
 import { getCollegePhoto } from "../CollegeCard";
 import type { InstitutionalDossier } from "../collegeDossierData";
+import { openExternalUrl, isNativePlatform } from "../../../lib/externalLinks";
 
 interface CollegeHeaderProps {
   college: CollegeDetailType;
@@ -63,8 +64,9 @@ export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
             {dossier?.officialWebsite && (
               <a
                 href={dossier.officialWebsite}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={isNativePlatform() ? "_self" : "_blank"}
+                rel={isNativePlatform() ? undefined : "noopener noreferrer"}
+                onClick={(e) => openExternalUrl(dossier.officialWebsite, e)}
                 className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-paper/90 hover:bg-paper text-charcoal text-[11px] sm:text-xs font-sans font-medium backdrop-blur-sm border border-white/40 shadow-xs transition-colors group min-h-[32px]"
                 title={`Visit official ${college.name} website`}
               >
