@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Campus Uncut</string>
+    <string name="title_activity_main">Campus Uncut</string>
+    <string name="package_name">com.wildcatterventures.campusuncut</string>
+    <string name="custom_url_scheme">com.wildcatterventures.campusuncut</string>
+</resources>

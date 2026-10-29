@@ -1,10 +1,51 @@
+import { Capacitor } from "@capacitor/core";
+import type { PluginListenerHandle } from "@capacitor/core";
+import { SpeechRecognition } from "@capgo/capacitor-speech-recognition";
+import type {
+  SpeechRecognitionPermissionStatus,
+  SpeechRecognitionAvailability,
+  SpeechRecognitionPartialResultEvent,
+  SpeechRecognitionListeningEvent,
+  SpeechRecognitionErrorEvent,
+} from "@capgo/capacitor-speech-recognition";
+
+let activeSpeechRecognitionPlugin: any = SpeechRecognition;
+
+/**
+ * Returns the speech recognition plugin instance (defaults to @capgo/capacitor-speech-recognition).
+ */
+export function getSpeechRecognitionPlugin(): typeof SpeechRecognition {
+  return activeSpeechRecognitionPlugin;
+}
+
+/**
+ * Injects a speech recognition plugin instance (useful for automated testing without hardware).
+ */
+export function setSpeechRecognitionPlugin(plugin: any): void {
+  activeSpeechRecognitionPlugin = plugin;
+}
+
 // Web Speech API interfaces for cross-browser compatibility
 interface IWindow extends Window {
   SpeechRecognition?: any;
   webkitSpeechRecognition?: any;
 }
 
+/**
+ * Checks whether the current runtime is native Android via Capacitor.
+ */
+export function isAndroidNative(): boolean {
+  try {
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  } catch {
+    return false;
+  }
+}
+
 export function isSpeechRecognitionSupported(): boolean {
+  if (isAndroidNative()) {
+    return true;
+  }
   if (typeof window === "undefined") return false;
   const win = window as IWindow;
   return Boolean(win.SpeechRecognition || win.webkitSpeechRecognition);
@@ -13,6 +54,40 @@ export function isSpeechRecognitionSupported(): boolean {
 export function isSpeechSynthesisSupported(): boolean {
   if (typeof window === "undefined") return false;
   return Boolean(window.speechSynthesis);
+}
+
+/**
+ * Extracts and normalizes transcribed text from a native plugin event.
+ */
+export function extractNativeTranscript(event: any): string {
+  if (!event) return "";
+  if (typeof event.accumulatedText === "string" && event.accumulatedText.trim()) {
+    return event.accumulatedText.trim();
+  }
+  const match =
+    Array.isArray(event.matches) && event.matches[0]
+      ? String(event.matches[0]).trim()
+      : "";
+  if (typeof event.accumulated === "string" && event.accumulated.trim()) {
+    return match ? `${event.accumulated.trim()} ${match}` : event.accumulated.trim();
+  }
+  return match;
+}
+
+/**
+ * Adapts a native partial-result event to the Web Speech result structure expected by TranscriptAssembler.
+ */
+export function adaptNativeSpeechEvent(
+  nativeEvent: any,
+  isFinal = false
+): { resultIndex: number; results: any[] } {
+  const text = extractNativeTranscript(nativeEvent);
+  return {
+    resultIndex: 0,
+    results: text
+      ? [Object.assign([{ transcript: text, text }], { isFinal })]
+      : [],
+  };
 }
 
 /**
@@ -27,26 +102,40 @@ export type SpeechState =
   | "error";
 
 /**
- * Friendly, actionable error messages for browser speech recognition errors.
+ * Friendly, actionable error messages for browser and Android native speech recognition errors.
  */
 export function getSpeechRecognitionErrorMessage(error: any): string {
-  const errCode = typeof error === "string" ? error : error?.error || error?.message || "";
+  const errCode = typeof error === "string" ? error : error?.code || error?.error || error?.message || "";
   switch (errCode) {
     case "not-allowed":
     case "permission-denied":
-      return "Microphone access was denied. Please allow microphone permissions in your browser address bar.";
+    case "INSUFFICIENT_PERMISSIONS":
+      return isAndroidNative()
+        ? "Microphone access was denied. Please allow microphone permissions in your Android app settings."
+        : "Microphone access was denied. Please allow microphone permissions in your browser address bar.";
     case "audio-capture":
+    case "AUDIO":
       return "No microphone was detected on this device. Please connect a microphone.";
     case "no-speech":
+    case "NO_MATCH":
+    case "SPEECH_TIMEOUT":
       return "No speech detected. Please speak closer to the microphone.";
     case "network":
+    case "NETWORK":
+    case "NETWORK_TIMEOUT":
+    case "SERVER":
+    case "SERVER_DISCONNECTED":
       return "Speech service network connection issue. Please check your internet or type your query.";
+    case "RECOGNIZER_BUSY":
+      return "Speech recognition service is busy. Please try again.";
     case "aborted":
       return "Voice listening was stopped.";
     case "service-not-allowed":
       return "Speech recognition service is not permitted by your browser. Please type your query.";
     case "language-not-supported":
       return "Speech recognition language is not supported. Please type your query.";
+    case "SPEECH_UNAVAILABLE":
+      return "Speech recognition is not available on this device. Please install or enable Google Speech Services.";
     default:
       return errCode
         ? `Voice error (${errCode}). Please type your query.`
@@ -137,11 +226,19 @@ export class TranscriptAssembler {
   }
 
   /**
-   * Processes a Web Speech API SpeechRecognitionEvent (or test mock object).
-   * Supports both full results snapshots and incremental updates using event.resultIndex.
+   * Processes a Web Speech API SpeechRecognitionEvent, native partial-result event, or test mock object.
+   * Supports both full results snapshots, incremental updates using event.resultIndex, and native Capacitor speech events.
    */
   public processEvent(event: any): TranscriptSnapshot {
-    if (!event || !event.results) {
+    if (!event) {
+      return this.getSnapshot();
+    }
+
+    if (!event.results && (event.matches || event.accumulatedText || event.accumulated)) {
+      event = adaptNativeSpeechEvent(event, Boolean(event.isFinal));
+    }
+
+    if (!event.results) {
       return this.getSnapshot();
     }
 
@@ -246,7 +343,8 @@ export interface SpeechSessionController {
 let globalSessionCounter = 0;
 let globalActiveSession: {
   id: number;
-  recognition: any;
+  recognition?: any;
+  cleanupNative?: () => void;
   assembler: TranscriptAssembler;
   silenceTimer: any;
   state: SpeechState;
@@ -274,13 +372,18 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
       if (globalActiveSession.silenceTimer) {
         clearTimeout(globalActiveSession.silenceTimer);
       }
-      globalActiveSession.recognition.onstart = null;
-      globalActiveSession.recognition.onspeechstart = null;
-      globalActiveSession.recognition.onsoundstart = null;
-      globalActiveSession.recognition.onresult = null;
-      globalActiveSession.recognition.onerror = null;
-      globalActiveSession.recognition.onend = null;
-      globalActiveSession.recognition.abort();
+      if (globalActiveSession.cleanupNative) {
+        globalActiveSession.cleanupNative();
+      }
+      if (globalActiveSession.recognition) {
+        globalActiveSession.recognition.onstart = null;
+        globalActiveSession.recognition.onspeechstart = null;
+        globalActiveSession.recognition.onsoundstart = null;
+        globalActiveSession.recognition.onresult = null;
+        globalActiveSession.recognition.onerror = null;
+        globalActiveSession.recognition.onend = null;
+        globalActiveSession.recognition.abort();
+      }
     } catch {
       // ignore
     }
@@ -295,7 +398,9 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
   };
 
   if (!isSpeechRecognitionSupported()) {
-    const errorMsg = "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.";
+    const errorMsg = isAndroidNative()
+      ? "Speech recognition is not supported on this device."
+      : "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.";
     options.onError?.(errorMsg, new Error("UNSUPPORTED_BROWSER"));
     setState("error");
     return {
@@ -305,6 +410,306 @@ export function startSpeechSession(options: SpeechSessionOptions): SpeechSession
       getState: () => "error",
       getTranscript: () => "",
     };
+  }
+
+  if (isAndroidNative()) {
+    const plugin = getSpeechRecognitionPlugin();
+    const sessionRecord = {
+      id: sessionId,
+      assembler: new TranscriptAssembler(),
+      silenceTimer: null as any,
+      state: "starting" as SpeechState,
+      finalTranscript: "",
+      latestCombined: "",
+      userAborted: false,
+      hasStarted: false,
+      silenceFired: false,
+      cleanupNative: null as any,
+    };
+
+    globalActiveSession = sessionRecord;
+
+    const setNativeState = (newState: SpeechState) => {
+      sessionRecord.state = newState;
+      setState(newState);
+    };
+
+    setNativeState("starting");
+
+    const clearSilenceTimer = () => {
+      if (sessionRecord.silenceTimer) {
+        clearTimeout(sessionRecord.silenceTimer);
+        sessionRecord.silenceTimer = null;
+      }
+    };
+
+    const resetSilenceTimer = () => {
+      clearSilenceTimer();
+      if (!autoStopOnSilence || sessionRecord.userAborted || sessionRecord.silenceFired) return;
+
+      sessionRecord.silenceTimer = setTimeout(() => {
+        if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted || sessionRecord.silenceFired) {
+          return;
+        }
+        sessionRecord.silenceFired = true;
+        setNativeState("processing");
+
+        const finalSubmission = (sessionRecord.latestCombined || sessionRecord.finalTranscript).trim();
+
+        try {
+          plugin.stop().catch(() => {});
+        } catch {
+          // ignore
+        }
+
+        if (options.onSilenceTimeout) {
+          options.onSilenceTimeout(finalSubmission);
+        } else if (finalSubmission) {
+          options.onFinalTranscript?.(finalSubmission);
+        }
+      }, silenceTimeoutMs);
+    };
+
+    const listenerHandles: PluginListenerHandle[] = [];
+    let isCleanedUp = false;
+
+    const cleanupNative = () => {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
+      const handles = listenerHandles.splice(0, listenerHandles.length);
+      for (const h of handles) {
+        try {
+          const res = h?.remove();
+          if (res && typeof (res as Promise<void>).catch === "function") {
+            (res as Promise<void>).catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    sessionRecord.cleanupNative = () => {
+      cleanupNative();
+      try {
+        plugin.stop().catch(() => {});
+      } catch {
+        // ignore
+      }
+    };
+
+    const onNativeStart = () => {
+      if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+      if (sessionRecord.hasStarted) return;
+      sessionRecord.hasStarted = true;
+      setNativeState("listening");
+      options.onStart?.();
+      resetSilenceTimer();
+    };
+
+    (async () => {
+      try {
+        if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+
+        // 1. Request microphone permission and verify granted
+        let permStatus: SpeechRecognitionPermissionStatus;
+        try {
+          permStatus = await plugin.requestPermissions();
+        } catch (permErr) {
+          if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+          setNativeState("error");
+          clearSilenceTimer();
+          cleanupNative();
+          if (globalActiveSession?.id === sessionId) {
+            globalActiveSession = null;
+          }
+          const msg = "Microphone access was denied. Please allow microphone permissions in your Android app settings.";
+          options.onError?.(msg, permErr);
+          return;
+        }
+
+        if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+
+        if (permStatus?.speechRecognition !== "granted") {
+          setNativeState("error");
+          clearSilenceTimer();
+          cleanupNative();
+          if (globalActiveSession?.id === sessionId) {
+            globalActiveSession = null;
+          }
+          const msg = "Microphone access was denied. Please allow microphone permissions in your Android app settings.";
+          options.onError?.(msg, new Error("PERMISSION_DENIED"));
+          return;
+        }
+
+        // 2. Check availability
+        let availability: SpeechRecognitionAvailability;
+        try {
+          availability = await plugin.available();
+        } catch (availErr) {
+          if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+          setNativeState("error");
+          clearSilenceTimer();
+          cleanupNative();
+          if (globalActiveSession?.id === sessionId) {
+            globalActiveSession = null;
+          }
+          const msg = "Speech recognition is not available on this device. Please install or enable Google Speech Services.";
+          options.onError?.(msg, availErr);
+          return;
+        }
+
+        if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+
+        if (!availability?.available) {
+          setNativeState("error");
+          clearSilenceTimer();
+          cleanupNative();
+          if (globalActiveSession?.id === sessionId) {
+            globalActiveSession = null;
+          }
+          const msg = "Speech recognition is not available on this device. Please install or enable Google Speech Services.";
+          options.onError?.(msg, new Error("SPEECH_UNAVAILABLE"));
+          return;
+        }
+
+        // 3. Register listeners BEFORE starting recognition
+        const partialHandle = await plugin.addListener(
+          "partialResults",
+          (event: SpeechRecognitionPartialResultEvent) => {
+            if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+
+            resetSilenceTimer();
+
+            const snapshot = sessionRecord.assembler.processEvent(event);
+            sessionRecord.latestCombined = snapshot.combinedTranscript;
+
+            if (snapshot.finalTranscript) {
+              sessionRecord.finalTranscript = snapshot.finalTranscript;
+            }
+
+            options.onInterimTranscript?.(snapshot.combinedTranscript, snapshot.isComplete);
+          }
+        );
+        listenerHandles.push(partialHandle);
+
+        const stateHandle = await plugin.addListener(
+          "listeningState",
+          (event: SpeechRecognitionListeningEvent) => {
+            if (globalActiveSession?.id !== sessionId) return;
+
+            if (event.state === "started" || event.status === "started") {
+              onNativeStart();
+            } else if (event.state === "stopped" || event.status === "stopped") {
+              clearSilenceTimer();
+              cleanupNative();
+
+              const finalized = (sessionRecord.latestCombined || sessionRecord.finalTranscript).trim();
+              if (finalized && !sessionRecord.userAborted && !sessionRecord.silenceFired) {
+                sessionRecord.silenceFired = true;
+                options.onFinalTranscript?.(finalized);
+              }
+
+              if (globalActiveSession?.id === sessionId) {
+                globalActiveSession = null;
+              }
+
+              if (sessionRecord.state !== "error") {
+                setNativeState("idle");
+              }
+              options.onEnd?.();
+            }
+          }
+        );
+        listenerHandles.push(stateHandle);
+
+        const errorHandle = await plugin.addListener(
+          "error",
+          (event: SpeechRecognitionErrorEvent) => {
+            if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) return;
+            clearSilenceTimer();
+            cleanupNative();
+
+            const errCode = event.code || "";
+            if (
+              (errCode === "NO_MATCH" || errCode === "SPEECH_TIMEOUT" || errCode === "no-speech" || errCode === "CLIENT") &&
+              (sessionRecord.finalTranscript || sessionRecord.silenceFired || sessionRecord.latestCombined)
+            ) {
+              return;
+            }
+
+            const errorMsg = getSpeechRecognitionErrorMessage(errCode || event.message);
+            setNativeState("error");
+            options.onError?.(errorMsg, event);
+          }
+        );
+        listenerHandles.push(errorHandle);
+
+        if (globalActiveSession?.id !== sessionId || sessionRecord.userAborted) {
+          cleanupNative();
+          return;
+        }
+
+        // 4. Start recognition
+        await plugin.start({
+          language: preferredLang,
+          maxResults: 1,
+          partialResults: true,
+          popup: false,
+        });
+
+        // Ensure session transitions to listening if start resolved and listeningState was slightly delayed
+        onNativeStart();
+      } catch (err: any) {
+        setNativeState("error");
+        clearSilenceTimer();
+        cleanupNative();
+        if (globalActiveSession?.id === sessionId) {
+          globalActiveSession = null;
+        }
+        if (!sessionRecord.userAborted) {
+          const msg = getSpeechRecognitionErrorMessage(err);
+          options.onError?.(msg, err);
+        }
+      }
+    })();
+
+    const controller: SpeechSessionController = {
+      sessionId,
+      stop: () => {
+        if (globalActiveSession?.id !== sessionId) return;
+        clearSilenceTimer();
+        setNativeState("processing");
+        try {
+          plugin.stop().catch(() => {});
+        } catch {
+          // ignore
+        }
+      },
+      abort: () => {
+        if (globalActiveSession?.id !== sessionId) return;
+        sessionRecord.userAborted = true;
+        clearSilenceTimer();
+        cleanupNative();
+        setNativeState("idle");
+        try {
+          plugin.stop().catch(() => {});
+        } catch {
+          // ignore
+        }
+        if (globalActiveSession?.id === sessionId) {
+          globalActiveSession = null;
+        }
+      },
+      getState: () => {
+        return sessionRecord.state;
+      },
+      getTranscript: () => {
+        return (sessionRecord.finalTranscript || sessionRecord.latestCombined).trim();
+      },
+    };
+
+    return controller;
   }
 
   const win = window as IWindow;

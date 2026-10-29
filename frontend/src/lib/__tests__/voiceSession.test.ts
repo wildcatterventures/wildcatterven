@@ -1,12 +1,18 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { Capacitor } from "@capacitor/core";
+import { SpeechRecognition } from "@capgo/capacitor-speech-recognition";
 import {
   getSpeechRecognitionErrorMessage,
   startSpeechSession,
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
+  isAndroidNative,
+  extractNativeTranscript,
+  adaptNativeSpeechEvent,
   TranscriptAssembler,
   assembleSpeechResults,
+  setSpeechRecognitionPlugin,
 } from "../voice.ts";
 
 describe("voiceSession & SpeechRecognition helpers", () => {
@@ -734,6 +740,468 @@ describe("voiceSession & SpeechRecognition helpers", () => {
           done();
         },
       });
+    });
+  });
+
+  describe("Android Native Detection & Helper Tests", () => {
+    it("isAndroidNative correctly identifies platform via Capacitor", () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+      try {
+        Capacitor.isNativePlatform = () => true;
+        Capacitor.getPlatform = () => "android";
+        assert.strictEqual(isAndroidNative(), true);
+
+        Capacitor.getPlatform = () => "web";
+        assert.strictEqual(isAndroidNative(), false);
+
+        Capacitor.getPlatform = () => "ios";
+        assert.strictEqual(isAndroidNative(), false);
+
+        Capacitor.isNativePlatform = () => false;
+        Capacitor.getPlatform = () => "android";
+        assert.strictEqual(isAndroidNative(), false);
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+      }
+    });
+
+    it("isSpeechRecognitionSupported returns true on Android native even without Web Speech API", () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+      const origWindow = (globalThis as any).window;
+      try {
+        Capacitor.isNativePlatform = () => true;
+        Capacitor.getPlatform = () => "android";
+        (globalThis as any).window = {};
+        assert.strictEqual(isSpeechRecognitionSupported(), true);
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        (globalThis as any).window = origWindow;
+      }
+    });
+
+    it("extractNativeTranscript and adaptNativeSpeechEvent handle various native formats", () => {
+      assert.strictEqual(extractNativeTranscript({ matches: ["colleges in Pune"] }), "colleges in Pune");
+      assert.strictEqual(
+        extractNativeTranscript({ matches: ["Pune"], accumulated: "colleges in" }),
+        "colleges in Pune"
+      );
+      assert.strictEqual(
+        extractNativeTranscript({ accumulatedText: "best engineering colleges" }),
+        "best engineering colleges"
+      );
+      assert.strictEqual(extractNativeTranscript(null), "");
+
+      const adapted = adaptNativeSpeechEvent({ matches: ["top colleges"] }, false);
+      assert.strictEqual(adapted.resultIndex, 0);
+      assert.strictEqual(adapted.results[0][0].transcript, "top colleges");
+      assert.strictEqual(adapted.results[0].isFinal, false);
+    });
+
+    it("TranscriptAssembler replaces interim native hypotheses without duplicating words", () => {
+      const assembler = new TranscriptAssembler();
+
+      const snap1 = assembler.processEvent({ matches: ["Show"] });
+      assert.strictEqual(snap1.combinedTranscript, "Show");
+
+      const snap2 = assembler.processEvent({ matches: ["Show me"] });
+      assert.strictEqual(snap2.combinedTranscript, "Show me");
+      assert.ok(!snap2.combinedTranscript.includes("Show Show"));
+
+      const snap3 = assembler.processEvent({ matches: ["Show me engineering"] });
+      assert.strictEqual(snap3.combinedTranscript, "Show me engineering");
+      assert.ok(!snap3.combinedTranscript.includes("Show me Show me"));
+
+      const snap4 = assembler.processEvent({
+        matches: ["Show me engineering colleges"],
+        isFinal: true,
+      });
+      assert.strictEqual(snap4.finalTranscript, "Show me engineering colleges");
+      assert.strictEqual(snap4.isComplete, true);
+      assert.ok(!snap4.finalTranscript.includes("engineering engineering"));
+    });
+
+    it("TranscriptAssembler preserves legitimate repetition in native events", () => {
+      const assembler = new TranscriptAssembler();
+      const snap = assembler.processEvent({ matches: ["very very good"], isFinal: true });
+      assert.strictEqual(snap.finalTranscript, "very very good");
+    });
+
+    it("getSpeechRecognitionErrorMessage provides actionable messages for Android error codes", () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+      try {
+        Capacitor.isNativePlatform = () => true;
+        Capacitor.getPlatform = () => "android";
+
+        const permMsg = getSpeechRecognitionErrorMessage("INSUFFICIENT_PERMISSIONS");
+        assert.ok(permMsg.includes("Microphone access was denied"));
+        assert.ok(permMsg.includes("Android app settings"));
+
+        const audioMsg = getSpeechRecognitionErrorMessage("AUDIO");
+        assert.ok(audioMsg.includes("No microphone was detected"));
+
+        const noSpeechMsg = getSpeechRecognitionErrorMessage("NO_MATCH");
+        assert.ok(noSpeechMsg.includes("No speech detected"));
+
+        const timeoutMsg = getSpeechRecognitionErrorMessage("SPEECH_TIMEOUT");
+        assert.ok(timeoutMsg.includes("No speech detected"));
+
+        const netMsg = getSpeechRecognitionErrorMessage("NETWORK");
+        assert.ok(netMsg.includes("network connection issue"));
+
+        const busyMsg = getSpeechRecognitionErrorMessage("RECOGNIZER_BUSY");
+        assert.ok(busyMsg.includes("service is busy"));
+
+        const unavailMsg = getSpeechRecognitionErrorMessage("SPEECH_UNAVAILABLE");
+        assert.ok(unavailMsg.includes("not available on this device"));
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+      }
+    });
+  });
+
+  describe("startSpeechSession on Android Native Simulation", () => {
+    it("reports actionable error and transitions to error state when microphone permission is denied", async () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      try {
+        Capacitor.isNativePlatform = () => true;
+        Capacitor.getPlatform = () => "android";
+        setSpeechRecognitionPlugin({
+          requestPermissions: async () => ({ speechRecognition: "denied" }),
+          available: async () => ({ available: true }),
+          addListener: async () => ({ remove: async () => {} }),
+          start: async () => ({ matches: [] }),
+          stop: async () => {},
+        });
+
+        let reportedError = "";
+        let reportedState = "";
+
+        const controller = startSpeechSession({
+          onError: (msg) => {
+            reportedError = msg;
+          },
+          onStateChange: (state) => {
+            reportedState = state;
+          },
+        });
+
+        assert.strictEqual(controller.getState(), "starting");
+        await new Promise<void>((resolve) => {
+          let count = 0;
+          const interval = setInterval(() => {
+            if (reportedError || ++count > 25) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 10);
+        });
+
+        assert.strictEqual(controller.getState(), "error");
+        assert.strictEqual(reportedState, "error");
+        assert.ok(reportedError.includes("Microphone access was denied"));
+        assert.ok(reportedError.includes("Android app settings"));
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      }
+    });
+
+    it("reports actionable error and transitions to error state when recognition service is unavailable", async () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      try {
+        Capacitor.isNativePlatform = () => true;
+        Capacitor.getPlatform = () => "android";
+        setSpeechRecognitionPlugin({
+          requestPermissions: async () => ({ speechRecognition: "granted" }),
+          available: async () => ({ available: false }),
+          addListener: async () => ({ remove: async () => {} }),
+          start: async () => ({ matches: [] }),
+          stop: async () => {},
+        });
+
+        let reportedError = "";
+        let reportedState = "";
+
+        const controller = startSpeechSession({
+          onError: (msg) => {
+            reportedError = msg;
+          },
+          onStateChange: (state) => {
+            reportedState = state;
+          },
+        });
+
+        await new Promise<void>((resolve) => {
+          let count = 0;
+          const interval = setInterval(() => {
+            if (reportedError || ++count > 25) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 10);
+        });
+
+        assert.strictEqual(controller.getState(), "error");
+        assert.strictEqual(reportedState, "error");
+        assert.ok(reportedError.includes("not available on this device"));
+        assert.ok(reportedError.includes("Google Speech Services"));
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      }
+    });
+
+    it("manages native session lifecycle: start options, streaming interim updates, silence timeout, and handle cleanup", (_, done) => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      const registeredListeners: { [name: string]: (data: any) => void } = {};
+      const handlesRemoved: string[] = [];
+      let capturedStartOptions: any = null;
+      let stopInvoked = false;
+
+      Capacitor.isNativePlatform = () => true;
+      Capacitor.getPlatform = () => "android";
+      setSpeechRecognitionPlugin({
+        requestPermissions: async () => ({ speechRecognition: "granted" }),
+        available: async () => ({ available: true }),
+        addListener: async (eventName: any, listenerFunc: any) => {
+          registeredListeners[eventName] = listenerFunc;
+          return {
+            remove: async () => {
+              handlesRemoved.push(eventName);
+              delete registeredListeners[eventName];
+            },
+          };
+        },
+        start: async (options: any) => {
+          capturedStartOptions = options;
+          return { matches: [] };
+        },
+        stop: async () => {
+          stopInvoked = true;
+          setTimeout(() => {
+            registeredListeners["listeningState"]?.({ state: "stopped", status: "stopped" });
+          }, 5);
+        },
+      });
+
+      const interimEmissions: string[] = [];
+      let onStartFired = false;
+      let silenceFiredText = "";
+
+      const cleanup = () => {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      };
+
+      startSpeechSession({
+        silenceTimeoutMs: 35,
+        autoStopOnSilence: true,
+        onStart: () => {
+          onStartFired = true;
+        },
+        onInterimTranscript: (text) => {
+          interimEmissions.push(text);
+        },
+        onSilenceTimeout: (transcript) => {
+          silenceFiredText = transcript;
+        },
+        onEnd: () => {
+          try {
+            assert.strictEqual(onStartFired, true);
+            assert.strictEqual(capturedStartOptions.language, "en-IN");
+            assert.strictEqual(capturedStartOptions.maxResults, 1);
+            assert.strictEqual(capturedStartOptions.partialResults, true);
+            assert.strictEqual(capturedStartOptions.popup, false);
+            assert.strictEqual(silenceFiredText, "Show me Mumbai colleges");
+            assert.ok(interimEmissions.includes("Show me"));
+            assert.ok(interimEmissions.includes("Show me Mumbai colleges"));
+            assert.strictEqual(stopInvoked, true);
+            assert.ok(handlesRemoved.includes("partialResults"));
+            assert.ok(handlesRemoved.includes("listeningState"));
+            assert.ok(handlesRemoved.includes("error"));
+            cleanup();
+            done();
+          } catch (err) {
+            cleanup();
+            done(err);
+          }
+        },
+      });
+
+      setTimeout(() => {
+        registeredListeners["listeningState"]?.({ state: "started", status: "started" });
+        registeredListeners["partialResults"]?.({ matches: ["Show me"] });
+
+        setTimeout(() => {
+          registeredListeners["partialResults"]?.({ matches: ["Show me Mumbai colleges"] });
+        }, 10);
+      }, 15);
+    });
+
+    it("user abort cleanly stops native recognition and prevents callbacks", (_, done) => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      const registeredListeners: { [name: string]: (data: any) => void } = {};
+      const handlesRemoved: string[] = [];
+      let callbacksFired = 0;
+
+      Capacitor.isNativePlatform = () => true;
+      Capacitor.getPlatform = () => "android";
+      setSpeechRecognitionPlugin({
+        requestPermissions: async () => ({ speechRecognition: "granted" }),
+        available: async () => ({ available: true }),
+        addListener: async (eventName: any, listenerFunc: any) => {
+          registeredListeners[eventName] = listenerFunc;
+          return {
+            remove: async () => {
+              handlesRemoved.push(eventName);
+              delete registeredListeners[eventName];
+            },
+          };
+        },
+        start: async () => ({ matches: [] }),
+        stop: async () => {},
+      });
+
+      const cleanup = () => {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      };
+
+      const controller = startSpeechSession({
+        silenceTimeoutMs: 30,
+        autoStopOnSilence: true,
+        onSilenceTimeout: () => {
+          callbacksFired++;
+        },
+        onFinalTranscript: () => {
+          callbacksFired++;
+        },
+      });
+
+      setTimeout(() => {
+        registeredListeners["listeningState"]?.({ state: "started", status: "started" });
+        registeredListeners["partialResults"]?.({ matches: ["abort this query"] });
+
+        setTimeout(() => {
+          controller.abort();
+          assert.strictEqual(controller.getState(), "idle");
+          assert.ok(handlesRemoved.includes("partialResults"));
+
+          setTimeout(() => {
+            assert.strictEqual(callbacksFired, 0, "No callbacks should fire on aborted session");
+            cleanup();
+            done();
+          }, 45);
+        }, 10);
+      }, 15);
+    });
+
+    it("competing native session cleanly terminates earlier active session", async () => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      let stopCalledCount = 0;
+
+      Capacitor.isNativePlatform = () => true;
+      Capacitor.getPlatform = () => "android";
+      setSpeechRecognitionPlugin({
+        requestPermissions: async () => ({ speechRecognition: "granted" }),
+        available: async () => ({ available: true }),
+        addListener: async () => ({
+          remove: async () => {},
+        }),
+        start: async () => ({ matches: [] }),
+        stop: async () => {
+          stopCalledCount++;
+        },
+      });
+
+      try {
+        const session1 = startSpeechSession({ silenceTimeoutMs: 1000 });
+        const session2 = startSpeechSession({ silenceTimeoutMs: 1000 });
+
+        assert.ok(session2.sessionId > session1.sessionId);
+        assert.ok(stopCalledCount >= 1, "Expected previous session to be stopped");
+      } finally {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      }
+    });
+
+    it("natural stopped event delivers onFinalTranscript when silence timeout did not fire", (_, done) => {
+      const origIsNative = Capacitor.isNativePlatform;
+      const origGetPlatform = Capacitor.getPlatform;
+
+      const registeredListeners: { [name: string]: (data: any) => void } = {};
+      let finalTranscriptCalls = 0;
+      let finalTranscriptReceived = "";
+
+      Capacitor.isNativePlatform = () => true;
+      Capacitor.getPlatform = () => "android";
+      setSpeechRecognitionPlugin({
+        requestPermissions: async () => ({ speechRecognition: "granted" }),
+        available: async () => ({ available: true }),
+        addListener: async (eventName: any, listenerFunc: any) => {
+          registeredListeners[eventName] = listenerFunc;
+          return { remove: async () => {} };
+        },
+        start: async () => ({ matches: [] }),
+        stop: async () => {},
+      });
+
+      const cleanup = () => {
+        Capacitor.isNativePlatform = origIsNative;
+        Capacitor.getPlatform = origGetPlatform;
+        setSpeechRecognitionPlugin(SpeechRecognition);
+      };
+
+      startSpeechSession({
+        silenceTimeoutMs: 1000,
+        autoStopOnSilence: true,
+        onFinalTranscript: (text) => {
+          finalTranscriptCalls++;
+          finalTranscriptReceived = text;
+        },
+        onEnd: () => {
+          try {
+            assert.strictEqual(finalTranscriptCalls, 1);
+            assert.strictEqual(finalTranscriptReceived, "Show me medical colleges");
+            cleanup();
+            done();
+          } catch (err) {
+            cleanup();
+            done(err);
+          }
+        },
+      });
+
+      setTimeout(() => {
+        registeredListeners["listeningState"]?.({ state: "started", status: "started" });
+        registeredListeners["partialResults"]?.({ matches: ["Show me medical colleges"] });
+
+        setTimeout(() => {
+          registeredListeners["listeningState"]?.({ state: "stopped", status: "stopped" });
+        }, 10);
+      }, 15);
     });
   });
 });
