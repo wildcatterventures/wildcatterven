@@ -116,6 +116,37 @@ test("Privacy Policy & Data Protection Verification", async (t) => {
       content.includes("transient in our backend"),
       "Must specify that conversation processing is transient and not intentionally stored in persistent chat database"
     );
+
+    // Verifies AI response reporting disclosures
+    assert.ok(
+      content.includes("When a user reports an AI assistant response, the following information is stored in the application's database") ||
+      content.includes("AI Response Reporting Disclosures"),
+      "Must disclose the stored reporting fields for AI responses"
+    );
+    assert.ok(
+      content.includes("The reported AI response text"),
+      "Must disclose reported AI response text storage"
+    );
+    assert.ok(
+      content.includes("The selected report category"),
+      "Must disclose selected report category storage"
+    );
+    assert.ok(
+      content.includes("Optional user notes"),
+      "Must disclose optional user notes storage"
+    );
+    assert.ok(
+      content.includes("A pseudonymous client UUID, where available"),
+      "Must disclose pseudonymous client UUID storage"
+    );
+    assert.ok(
+      content.includes("The report submission timestamp"),
+      "Must disclose report submission timestamp storage"
+    );
+    assert.ok(
+      content.includes("separate from ordinary AI conversation history"),
+      "Must clarify reporting records are separate from ordinary AI conversation history"
+    );
   });
 
   await t.test("route /privacy-policy is configured in App.tsx", () => {

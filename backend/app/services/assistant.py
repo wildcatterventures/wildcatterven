@@ -12,6 +12,7 @@ from app.schemas.assistant import (
     AssistantMessageResponse,
     ToolCallRecord,
 )
+from app.services.safety import evaluate_input_safety, evaluate_output_safety
 
 logger = logging.getLogger("campus_uncut.assistant")
 
@@ -71,6 +72,21 @@ async def process_assistant_message(
         req.message,
         provider_name,
     )
+
+    # Phase 3 safety: Evaluate user input before LLM invocation or tool execution
+    input_safety = evaluate_input_safety(req.message)
+    if not input_safety.is_safe:
+        logger.info(
+            "[SAFETY] Input blocked by safety filter: %s (reason: %s)",
+            input_safety.category,
+            input_safety.reason,
+        )
+        return AssistantMessageResponse(
+            reply=input_safety.refusal_message,
+            tool_calls=[],
+            structured_payload=None,
+            provider_used="safety_guard",
+        )
 
     # Assemble conversation messages
     messages: List[Dict[str, Any]] = []
@@ -194,8 +210,24 @@ async def process_assistant_message(
         len(tool_call_records),
     )
 
+    final_reply = reply_text or "Platform query completed successfully."
+    output_safety = evaluate_output_safety(final_reply)
+    if not output_safety.is_safe:
+        logger.warning(
+            "[SAFETY] Output blocked by safety filter: %s (reason: %s, provider: %s)",
+            output_safety.category,
+            output_safety.reason,
+            provider_name,
+        )
+        return AssistantMessageResponse(
+            reply=output_safety.refusal_message,
+            tool_calls=[],
+            structured_payload=None,
+            provider_used="safety_guard",
+        )
+
     return AssistantMessageResponse(
-        reply=reply_text or "Platform query completed successfully.",
+        reply=final_reply,
         tool_calls=tool_call_records,
         structured_payload=structured_payload or None,
         provider_used=provider_name,

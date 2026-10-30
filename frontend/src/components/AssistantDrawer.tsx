@@ -11,6 +11,8 @@ import {
   HelpCircle,
   CheckCircle2,
   MapPin,
+  Flag,
+  AlertCircle,
 } from "lucide-react";
 import { api } from "../lib/api";
 import { getClientUUID, getActiveSessionId } from "../lib/storage";
@@ -21,7 +23,7 @@ import {
   speakText,
   stopSpeaking,
 } from "../lib/voice";
-import type { ChatMessage, ToolCallRecord } from "../types/assistant";
+import type { ChatMessage, ToolCallRecord, ReportReason } from "../types/assistant";
 import { ScoreBadge } from "./ScoreBadge";
 import { DemoBadge } from "./DemoBadge";
 
@@ -228,6 +230,16 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   const [voicePlaybackEnabled, setVoicePlaybackEnabled] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<ReportReason>("inappropriate");
+  const [reportNotes, setReportNotes] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportedMessageIds, setReportedMessageIds] = useState<Set<string>>(new Set());
+  const [reportFeedback, setReportFeedback] = useState<{
+    messageId: string;
+    status: "success" | "error";
+    text: string;
+  } | null>(null);
   const stopListeningRef = useRef<(() => void) | null>(null);
   const baseInputRef = useRef<string>("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -295,6 +307,34 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       onEnd: () => setSpeakingMessageId(null),
       onError: () => setSpeakingMessageId(null),
     });
+  };
+
+  const handleSubmitReport = async (msg: MessageItem) => {
+    setIsSubmittingReport(true);
+    try {
+      const clientUuid = getClientUUID();
+      const res = await api.reportAssistantMessage({
+        message_content: msg.content,
+        reason: reportReason,
+        user_notes: reportNotes.trim() || undefined,
+        client_uuid: clientUuid || undefined,
+      });
+      setReportedMessageIds((prev) => new Set(prev).add(msg.id));
+      setReportingMessageId(null);
+      setReportFeedback({
+        messageId: msg.id,
+        status: "success",
+        text: res.message || "Thank you. Your report has been submitted.",
+      });
+    } catch (err: any) {
+      setReportFeedback({
+        messageId: msg.id,
+        status: "error",
+        text: err?.message || "Failed to submit report. Please try again.",
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -710,12 +750,133 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
                     <span>{speakingMessageId === m.id ? "Stop Voice" : "Listen"}</span>
                   </button>
                 )}
+                {!isUser && (
+                  <button
+                    type="button"
+                    disabled={reportedMessageIds.has(m.id)}
+                    onClick={() => {
+                      if (reportedMessageIds.has(m.id)) return;
+                      if (reportingMessageId === m.id) {
+                        setReportingMessageId(null);
+                      } else {
+                        setReportingMessageId(m.id);
+                        setReportReason("inappropriate");
+                        setReportNotes("");
+                      }
+                    }}
+                    title={reportedMessageIds.has(m.id) ? "Response reported" : "Report inappropriate response"}
+                    className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
+                      reportedMessageIds.has(m.id)
+                        ? "text-olive bg-olive/10 cursor-default"
+                        : reportingMessageId === m.id
+                        ? "bg-terracotta text-paper"
+                        : "text-charcoal-muted hover:text-terracotta bg-warm-grey-light hover:bg-warm-grey"
+                    }`}
+                  >
+                    <Flag className="w-3 h-3" />
+                    <span>{reportedMessageIds.has(m.id) ? "Reported" : "Report"}</span>
+                  </button>
+                )}
                 {m.providerUsed && (
                   <span className="text-[10px] font-mono text-charcoal-muted/70">
                     Engine: {m.providerUsed === "groq" ? "Groq LLM (Hosted)" : m.providerUsed === "mock" ? "Deterministic Rule Engine" : m.providerUsed}
                   </span>
                 )}
               </div>
+
+              {/* Inline Report Panel */}
+              {reportingMessageId === m.id && (
+                <div className="mt-2.5 p-3 rounded bg-card border border-warm-grey text-left space-y-2 text-xs shadow-sm max-w-sm">
+                  <div className="flex items-center justify-between border-b border-warm-grey/50 pb-1.5">
+                    <span className="font-semibold text-charcoal font-sans flex items-center gap-1.5 text-xs">
+                      <Flag className="w-3.5 h-3.5 text-terracotta" />
+                      Report AI Response
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReportingMessageId(null)}
+                      className="text-charcoal-muted hover:text-charcoal p-0.5 rounded"
+                      title="Close"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-charcoal-muted leading-relaxed">
+                    Flag an inappropriate, sexually explicit, harmful, or policy-violating response to help keep Campus Uncut safe.
+                  </p>
+                  <div>
+                    <label className="block text-[11px] font-medium text-charcoal mb-1">
+                      Reason:
+                    </label>
+                    <select
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                      className="w-full text-xs p-1.5 rounded border border-warm-grey bg-paper text-charcoal focus:outline-none focus:border-olive"
+                    >
+                      <option value="sexually_explicit">Sexually explicit or erotic content</option>
+                      <option value="hate_or_harassment">Hate speech, harassment, or ragging</option>
+                      <option value="violence_or_harm">Violence, weapons, or self-harm</option>
+                      <option value="inappropriate">Inappropriate or inaccurate for campus</option>
+                      <option value="other">Other policy concern</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-charcoal mb-1">
+                      Additional details (optional):
+                    </label>
+                    <textarea
+                      value={reportNotes}
+                      onChange={(e) => setReportNotes(e.target.value.slice(0, 500))}
+                      placeholder="Briefly describe what was objectionable..."
+                      rows={2}
+                      className="w-full text-xs p-1.5 rounded border border-warm-grey bg-paper text-charcoal focus:outline-none focus:border-olive resize-none"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={isSubmittingReport}
+                      onClick={() => setReportingMessageId(null)}
+                      className="px-2.5 py-1 text-[11px] rounded border border-warm-grey text-charcoal-muted hover:text-charcoal"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingReport}
+                      onClick={() => handleSubmitReport(m)}
+                      className="btn-terracotta text-[11px] px-3 py-1 font-medium inline-flex items-center gap-1"
+                    >
+                      {isSubmittingReport ? (
+                        <>
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-paper border-t-transparent animate-spin" />
+                          <span>Submitting...</span>
+                        </>
+                      ) : (
+                        <span>Submit Report</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Report Confirmation or Error Notification */}
+              {reportFeedback && reportFeedback.messageId === m.id && (
+                <div
+                  className={`mt-1.5 px-2.5 py-1.5 rounded text-[11px] flex items-center gap-1.5 max-w-sm ${
+                    reportFeedback.status === "success"
+                      ? "bg-olive/10 text-olive border border-olive/20"
+                      : "bg-terracotta/10 text-terracotta border border-terracotta/20"
+                  }`}
+                >
+                  {reportFeedback.status === "success" ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  )}
+                  <span>{reportFeedback.text}</span>
+                </div>
+              )}
             </div>
           );
         })}

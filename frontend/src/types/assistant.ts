@@ -27,3 +27,23 @@ export interface AssistantMessageResponse {
   } | null;
   provider_used: string;
 }
+
+export type ReportReason =
+  | "sexually_explicit"
+  | "hate_or_harassment"
+  | "violence_or_harm"
+  | "inappropriate"
+  | "other";
+
+export interface CreateAssistantReportRequest {
+  message_content: string;
+  reason: ReportReason;
+  user_notes?: string;
+  client_uuid?: string;
+}
+
+export interface AssistantReportResponse {
+  id: string;
+  status: string;
+  message: string;
+}

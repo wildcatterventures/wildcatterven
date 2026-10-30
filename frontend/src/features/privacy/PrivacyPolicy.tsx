@@ -303,6 +303,17 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                   <strong>Transient Backend Processing:</strong> Conversation processing is transient in our backend and is not intentionally stored in Campus Uncut&apos;s persistent chat database, according to the current implementation.
                 </li>
                 <li>
+                  <strong>AI Response Reporting Disclosures:</strong> When a user reports an AI assistant response, the following information is stored in the application&apos;s database:
+                  <ul className="list-disc pl-5 mt-1.5 space-y-1 text-[11px]">
+                    <li>The reported AI response text.</li>
+                    <li>The selected report category.</li>
+                    <li>Optional user notes.</li>
+                    <li>A pseudonymous client UUID, where available.</li>
+                    <li>The report submission timestamp.</li>
+                  </ul>
+                  This is separate from ordinary AI conversation history, which is not stored in our persistent database.
+                </li>
+                <li>
                   <strong>Approved Tool Specifications:</strong> The assistant accesses college information through read-only backend domain functions to query verified metrics. It cannot execute raw SQL queries or modify database records.
                 </li>
                 <li>
@@ -346,6 +357,9 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               </li>
               <li>
                 <code className="font-mono text-[11px] bg-warm-grey-light px-1 py-0.5 rounded text-charcoal">search_events</code>: Truncated query strings, input modes, and visitor session IDs for platform search telemetry.
+              </li>
+              <li>
+                <code className="font-mono text-[11px] bg-warm-grey-light px-1 py-0.5 rounded text-charcoal">ai_response_reports</code>: User-submitted reports flagging objectionable AI assistant responses, storing the reported response text, selected report category, optional user notes, pseudonymous client UUID (where available), and submission timestamp.
               </li>
             </ul>
           </div>

@@ -533,6 +533,34 @@ class MockAsyncpgConnection:
             }
             return ev_id
 
+        # Check ai_response_reports deduplication
+        if "FROM ai_response_reports" in q and "client_uuid = $1" in q:
+            client_uuid, content = args[0], args[1]
+            now = datetime.now(timezone.utc)
+            for rep in self.db_state.get("ai_response_reports", {}).values():
+                if rep.get("client_uuid") == client_uuid and rep.get("message_content") == content:
+                    created_at = rep.get("created_at", now)
+                    diff = (now - created_at).total_seconds()
+                    if diff <= 30:
+                        return rep["id"]
+            return None
+
+        # Insert ai_response_reports returning id
+        if "INSERT INTO ai_response_reports" in q:
+            content, reason, notes, client_uuid = args[0], args[1], args[2], args[3]
+            new_id = uuid4()
+            if "ai_response_reports" not in self.db_state:
+                self.db_state["ai_response_reports"] = {}
+            self.db_state["ai_response_reports"][new_id] = {
+                "id": new_id,
+                "message_content": content,
+                "reason": reason,
+                "user_notes": notes,
+                "client_uuid": client_uuid,
+                "created_at": datetime.now(timezone.utc),
+            }
+            return new_id
+
         return None
 
     async def execute(self, query: str, *args) -> None:
@@ -783,6 +811,7 @@ def build_seeded_db_state() -> Dict[str, Any]:
         "score_contributions": score_contributions,
         "score_events": score_events,
         "search_events": {},
+        "ai_response_reports": {},
     }
 
 

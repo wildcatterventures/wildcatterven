@@ -17,13 +17,16 @@ import type {
 import type {
   AssistantMessageRequest,
   AssistantMessageResponse,
+  AssistantReportResponse,
+  CreateAssistantReportRequest,
 } from "../types/assistant";
-import { getClientUUID } from "./storage";
+import { getClientUUID } from "./storage.ts";
 
 function getApiBaseUrl(): string {
-  const envUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  const metaEnv = (import.meta as any)?.env || {};
+  const envUrl = (metaEnv.VITE_API_BASE_URL || "").trim();
   // Ensure production builds never call localhost or 127.0.0.1
-  if (import.meta.env.PROD) {
+  if (metaEnv.PROD) {
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)) {
       return "";
     }
@@ -53,7 +56,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const resolvedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE_URL}${resolvedPath}`;
 
-  if (import.meta.env.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+  const metaEnv = (import.meta as any)?.env || {};
+  if (metaEnv.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
     throw new ApiError(
       500,
       "Production build cannot call localhost. Ensure VITE_API_BASE_URL is configured with your production backend URL."
@@ -177,6 +181,15 @@ export const api = {
     data: AssistantMessageRequest
   ): Promise<AssistantMessageResponse> {
     return request<AssistantMessageResponse>("/api/assistant/message", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async reportAssistantMessage(
+    data: CreateAssistantReportRequest
+  ): Promise<AssistantReportResponse> {
+    return request<AssistantReportResponse>("/api/assistant/report", {
       method: "POST",
       body: JSON.stringify(data),
     });

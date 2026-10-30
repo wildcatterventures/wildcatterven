@@ -2,6 +2,7 @@ import json
 import re
 from typing import Any, Dict, List, Optional, Tuple
 from app.agents.base import BaseLLMProvider
+from app.services.safety import evaluate_input_safety
 
 
 class MockLLMProvider(BaseLLMProvider):
@@ -129,6 +130,11 @@ class MockLLMProvider(BaseLLMProvider):
             if m.get("role") == "user":
                 last_user_msg = m.get("content", "").strip()
                 break
+
+        if last_user_msg:
+            safety_eval = evaluate_input_safety(last_user_msg)
+            if not safety_eval.is_safe:
+                return safety_eval.refusal_message, []
 
         lower_input = last_user_msg.lower()
 
