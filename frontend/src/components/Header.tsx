@@ -10,6 +10,7 @@ import {
   Compass,
   Trophy,
   Users,
+  ShieldCheck,
 } from "lucide-react";
 import { api } from "../lib/api";
 
@@ -347,6 +348,18 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Users className="w-4 h-4 text-charcoal-muted" />
                 <span>Campus Circle (Community)</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick("privacy_policy")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors text-left ${
+                  currentView === "privacy_policy"
+                    ? "bg-warm-grey text-charcoal font-semibold"
+                    : "text-charcoal hover:bg-warm-grey-light"
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-charcoal-muted" />
+                <span>Privacy Policy</span>
               </button>
 
               <button

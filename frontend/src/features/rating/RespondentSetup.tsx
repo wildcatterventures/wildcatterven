@@ -295,7 +295,10 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
             )}
 
             <p className="text-[11px] text-charcoal-muted mt-1.5 leading-relaxed font-sans">
-              Generic webmail (@gmail.com, @yahoo.com) and cross-college voting are strictly disallowed. You can only rate the institution matching your official email.
+              Generic webmail (@gmail.com, @yahoo.com) and cross-college voting are strictly disallowed. You can only rate the institution matching your official email. Your institutional email is used strictly for domain affinity and is never shared publicly. For data privacy inquiries or deletion requests, contact{" "}
+              <a href="mailto:mathew.maxwell2021@gmail.com" className="text-olive hover:underline font-medium">
+                mathew.maxwell2021@gmail.com
+              </a>.
             </p>
           </div>
 

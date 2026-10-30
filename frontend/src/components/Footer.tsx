@@ -14,6 +14,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <p className="text-xs text-charcoal-muted leading-relaxed">
             A public, zero-cost intelligence platform dedicated to surfacing lived experiences behind the official college brochure.
           </p>
+          {onNavigate && (
+            <div className="mt-3">
+              <button
+                onClick={() => onNavigate("privacy_policy")}
+                className="text-xs font-medium text-olive hover:text-charcoal inline-flex items-center gap-1.5 transition-colors underline"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-olive shrink-0" />
+                <span>Privacy Policy &amp; Data Rights</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -54,8 +65,27 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto pt-6 border-t border-warm-grey flex flex-col sm:flex-row items-center justify-between text-[11px] text-charcoal-muted gap-2 font-mono text-center sm:text-left">
-        <div>Campus Uncut © 2026. Built on an uncompromised ₹0 development budget.</div>
+      <div className="max-w-7xl mx-auto pt-6 border-t border-warm-grey flex flex-col md:flex-row items-center justify-between text-[11px] text-charcoal-muted gap-2.5 font-mono text-center md:text-left">
+        <div>
+          <span>Campus Uncut © 2026 • WildCatter Ventures</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate("privacy_policy")}
+              className="hover:text-charcoal hover:underline transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+          )}
+          <span>•</span>
+          <a
+            href="mailto:mathew.maxwell2021@gmail.com"
+            className="hover:text-charcoal hover:underline transition-colors"
+          >
+            mathew.maxwell2021@gmail.com
+          </a>
+        </div>
         <div>FastAPI • Supabase PostgreSQL • React Vite</div>
       </div>
     </footer>
