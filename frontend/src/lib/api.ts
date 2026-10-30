@@ -30,22 +30,31 @@ export interface HealthResponse {
 
 export const PRODUCTION_API_BASE_URL = "https://campus-uncut.onrender.com";
 
-export function getApiBaseUrl(envOverride?: Record<string, any>): string {
-  const metaEnv = envOverride || (import.meta as any)?.env || {};
+const viteEnv = import.meta.env;
+
+export function getApiBaseUrl(
+  envOverride?: {
+    PROD?: boolean;
+    VITE_API_BASE_URL?: string;
+  }
+): string {
+  const metaEnv = envOverride ?? viteEnv ?? {};
   const envUrl = (metaEnv.VITE_API_BASE_URL || "").trim();
 
-  // If a valid non-localhost URL is provided, use it
-  if (envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)) {
+  if (
+    envUrl &&
+    !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)
+  ) {
     return envUrl.replace(/\/+$/, "");
   }
 
-  // In production builds (or when running on production hosts / capacitor), default to production Render backend
   if (metaEnv.PROD) {
     return PRODUCTION_API_BASE_URL;
   }
 
-  // In development, fall back to localhost if envUrl is missing or localhost
-  return envUrl ? envUrl.replace(/\/+$/, "") : "http://localhost:8000";
+  return envUrl
+    ? envUrl.replace(/\/+$/, "")
+    : "http://localhost:8000";
 }
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -79,8 +88,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const resolvedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE_URL}${resolvedPath}`;
 
-  const metaEnv = (import.meta as any)?.env || {};
-  if (metaEnv.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+  if (viteEnv?.PROD && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
     throw new ApiError(
       500,
       "Production build cannot call localhost. Ensure VITE_API_BASE_URL is configured with your production backend URL."

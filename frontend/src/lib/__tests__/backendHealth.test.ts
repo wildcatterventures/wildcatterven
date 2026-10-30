@@ -9,35 +9,87 @@ import {
 } from "../api.ts";
 
 describe("Backend Health & Connection Indicator (Google Play & Web)", () => {
-  it("uses production Render backend URL when building or running in production", () => {
+  it("resolves to Render backend in production when VITE_API_BASE_URL is missing / undefined", () => {
     assert.equal(PRODUCTION_API_BASE_URL, "https://campus-uncut.onrender.com");
 
-    // Case 1: PROD with no VITE_API_BASE_URL set -> defaults to Render backend
-    const prodDefault = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "" });
-    assert.equal(prodDefault, "https://campus-uncut.onrender.com");
+    const missingUrl = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: undefined });
+    assert.equal(missingUrl, "https://campus-uncut.onrender.com");
 
-    // Case 2: PROD with committed localhost in .env -> defaults to Render backend (never localhost or relative)
-    const prodLocalhost = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "http://localhost:8000" });
-    assert.equal(prodLocalhost, "https://campus-uncut.onrender.com");
+    const emptyUrl = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "" });
+    assert.equal(emptyUrl, "https://campus-uncut.onrender.com");
 
-    // Case 3: PROD with custom HTTPS URL -> preserves custom URL
-    const prodCustom = getApiBaseUrl({
+    const whitespaceUrl = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "   " });
+    assert.equal(whitespaceUrl, "https://campus-uncut.onrender.com");
+  });
+
+  it("resolves to Render backend in production when localhost is configured", () => {
+    const localhostPort = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "http://localhost:8000" });
+    assert.equal(localhostPort, "https://campus-uncut.onrender.com");
+
+    const localhostNoPort = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "http://localhost" });
+    assert.equal(localhostNoPort, "https://campus-uncut.onrender.com");
+
+    const ipPort = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "http://127.0.0.1:8000" });
+    assert.equal(ipPort, "https://campus-uncut.onrender.com");
+
+    const ipNoPort = getApiBaseUrl({ PROD: true, VITE_API_BASE_URL: "http://127.0.0.1" });
+    assert.equal(ipNoPort, "https://campus-uncut.onrender.com");
+  });
+
+  it("resolves to correct Render backend URL in production when explicitly provided", () => {
+    const exactRender = getApiBaseUrl({
       PROD: true,
-      VITE_API_BASE_URL: "https://staging-backend.onrender.com",
+      VITE_API_BASE_URL: "https://campus-uncut.onrender.com",
     });
-    assert.equal(prodCustom, "https://staging-backend.onrender.com");
+    assert.equal(exactRender, "https://campus-uncut.onrender.com");
 
-    // Case 4: Dev with localhost -> uses localhost
+    const trailingSlash = getApiBaseUrl({
+      PROD: true,
+      VITE_API_BASE_URL: "https://campus-uncut.onrender.com/",
+    });
+    assert.equal(trailingSlash, "https://campus-uncut.onrender.com");
+
+    const stagingRender = getApiBaseUrl({
+      PROD: true,
+      VITE_API_BASE_URL: "https://staging-campus-uncut.onrender.com",
+    });
+    assert.equal(stagingRender, "https://staging-campus-uncut.onrender.com");
+  });
+
+  it("resolves to localhost in development when configured with localhost", () => {
     const devLocalhost = getApiBaseUrl({ PROD: false, VITE_API_BASE_URL: "http://localhost:8000" });
     assert.equal(devLocalhost, "http://localhost:8000");
 
-    // Case 5: Dev with empty env -> defaults to localhost:8000
+    const devTrailing = getApiBaseUrl({ PROD: false, VITE_API_BASE_URL: "http://localhost:8000/" });
+    assert.equal(devTrailing, "http://localhost:8000");
+
     const devEmpty = getApiBaseUrl({ PROD: false, VITE_API_BASE_URL: "" });
     assert.equal(devEmpty, "http://localhost:8000");
   });
 
+  it("ensures production configuration cannot fall through to localhost under any missing/localhost setting", () => {
+    const problematicConfigs = [
+      { PROD: true, VITE_API_BASE_URL: undefined },
+      { PROD: true, VITE_API_BASE_URL: "" },
+      { PROD: true, VITE_API_BASE_URL: "http://localhost:8000" },
+      { PROD: true, VITE_API_BASE_URL: "http://localhost:3000" },
+      { PROD: true, VITE_API_BASE_URL: "http://127.0.0.1:8000" },
+      { PROD: true, VITE_API_BASE_URL: "https://localhost:8000" },
+    ];
+
+    for (const config of problematicConfigs) {
+      const url = getApiBaseUrl(config);
+      assert.equal(
+        url,
+        "https://campus-uncut.onrender.com",
+        `Configuration ${JSON.stringify(config)} must resolve to Render, got: ${url}`
+      );
+      assert.doesNotMatch(url, /localhost/i);
+      assert.doesNotMatch(url, /127\.0\.0\.1/);
+    }
+  });
+
   it("ensures health check target is an absolute backend URL ending with /health", () => {
-    // API_BASE_URL must not be empty or relative
     assert.ok(API_BASE_URL.startsWith("http"), `API_BASE_URL must start with http, got '${API_BASE_URL}'`);
     assert.doesNotMatch(API_BASE_URL, /vercel\.app/i, "API_BASE_URL must never target vercel.app");
   });
@@ -157,4 +209,3 @@ describe("Backend Health & Connection Indicator (Google Play & Web)", () => {
     }
   });
 });
-
