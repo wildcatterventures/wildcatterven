@@ -22,19 +22,42 @@ import type {
 } from "../types/assistant";
 import { getClientUUID } from "./storage.ts";
 
-function getApiBaseUrl(): string {
-  const metaEnv = (import.meta as any)?.env || {};
-  const envUrl = (metaEnv.VITE_API_BASE_URL || "").trim();
-  // Ensure production builds never call localhost or 127.0.0.1
-  if (metaEnv.PROD) {
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)) {
-      return "";
-    }
-  }
-  return envUrl.replace(/\/+$/, "");
+export interface HealthResponse {
+  status: string;
+  db: string;
+  environment?: string;
 }
 
-const API_BASE_URL = getApiBaseUrl();
+export const PRODUCTION_API_BASE_URL = "https://campus-uncut.onrender.com";
+
+export function getApiBaseUrl(envOverride?: Record<string, any>): string {
+  const metaEnv = envOverride || (import.meta as any)?.env || {};
+  const envUrl = (metaEnv.VITE_API_BASE_URL || "").trim();
+
+  // If a valid non-localhost URL is provided, use it
+  if (envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl)) {
+    return envUrl.replace(/\/+$/, "");
+  }
+
+  // In production builds (or when running on production hosts / capacitor), default to production Render backend
+  if (metaEnv.PROD) {
+    return PRODUCTION_API_BASE_URL;
+  }
+
+  // In development, fall back to localhost if envUrl is missing or localhost
+  return envUrl ? envUrl.replace(/\/+$/, "") : "http://localhost:8000";
+}
+
+export const API_BASE_URL = getApiBaseUrl();
+
+export function isBackendHealthy(res: any): boolean {
+  return Boolean(
+    res &&
+      typeof res === "object" &&
+      res.status === "ok" &&
+      res.db === "connected"
+  );
+}
 
 export class ApiError extends Error {
   status: number;
@@ -84,18 +107,38 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   });
 
+  const contentType = (response.headers?.get?.("content-type") || "").toLowerCase();
+  const isHtml = contentType.includes("text/html");
+
   if (!response.ok) {
     let errorDetail: any = `Request failed with status ${response.status}`;
-    try {
-      const data = await response.json();
-      errorDetail = data.detail || data;
-    } catch {
-      // response was not JSON
+    if (!isHtml) {
+      try {
+        const data = await response.json();
+        errorDetail = data.detail || data;
+      } catch {
+        // response was not JSON
+      }
     }
     throw new ApiError(response.status, errorDetail);
   }
 
-  return response.json() as Promise<T>;
+  // Reject non-JSON responses (e.g. Vercel SPA index.html returned with HTTP 200)
+  if (isHtml) {
+    throw new ApiError(
+      response.status,
+      `Expected JSON response from backend but received HTML (${url}). Verify backend URL configuration.`
+    );
+  }
+
+  try {
+    return (await response.json()) as T;
+  } catch (err: any) {
+    throw new ApiError(
+      response.status,
+      `Failed to parse response as JSON from ${url}: ${err?.message || err}`
+    );
+  }
 }
 
 // ==========================================
@@ -104,8 +147,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   // System Health
-  async checkHealth(): Promise<{ status: string; db: string; environment: string }> {
-    return request<{ status: string; db: string; environment: string }>("/health");
+  async checkHealth(): Promise<HealthResponse> {
+    return request<HealthResponse>("/health");
   },
 
   // Colleges

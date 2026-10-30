@@ -12,7 +12,7 @@ import {
   Users,
   ShieldCheck,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, isBackendHealthy } from "../lib/api";
 
 interface HeaderProps {
   currentView: string;
@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
       .checkHealth()
       .then((res) => {
         if (mounted) {
-          setDbStatus(res.db === "connected" ? "connected" : "disconnected");
+          setDbStatus(isBackendHealthy(res) ? "connected" : "disconnected");
         }
       })
       .catch(() => {
