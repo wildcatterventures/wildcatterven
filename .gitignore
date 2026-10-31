@@ -42,6 +42,7 @@ frontend/.env*
 *credential*
 *service_role*
 *service-role*
+frontend/android/keystore.properties
 
 # Node
 node_modules/
@@ -50,6 +51,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.tsbuildinfo
+
+# Backups & Database Snapshots
+docs/backups/
+*.snapshot.sql
+*.dump
+*.sql.bak
 
 # IDE & OS
 .vscode/

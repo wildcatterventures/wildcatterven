@@ -118,7 +118,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background-color: #C85A32;
+    background-color: #D9653B;
     color: #FFFFFF;
     font-size: 0.875rem;
     font-weight: 500;
@@ -128,7 +128,7 @@
   }
 
   .btn-terracotta:hover:not(:disabled) {
-    background-color: #A94723;
+    background-color: #B84A22;
   }
 
   .btn-terracotta:active:not(:disabled) {
@@ -301,6 +301,26 @@
 
   .pt-safe {
     padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
+  }
+
+  /* Mobile bottom navigation bar height and assistant drawer bottom offset */
+  .assistant-drawer-mobile {
+    bottom: calc(61px + max(1rem, env(safe-area-inset-bottom, 1rem)));
+  }
+
+  /* Mobile header height and assistant drawer top offset */
+  .assistant-drawer-top-mobile {
+    top: calc(56px + max(0.5rem, env(safe-area-inset-top, 0.5rem)));
+  }
+
+  @media (min-width: 768px) {
+    .assistant-drawer-mobile {
+      bottom: 0;
+    }
+
+    .assistant-drawer-top-mobile {
+      top: 0;
+    }
   }
 }
 

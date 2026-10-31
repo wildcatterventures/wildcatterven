@@ -1,7 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Mic, MicOff, ArrowRight, BookOpen, MessageSquareQuote, Sparkles, X, Loader2, Compass } from "lucide-react";
-
-import { isSpeechRecognitionSupported, startSpeechSession, SpeechSessionController, SpeechState } from "../../lib/voice";
+import {
+  Search,
+  Mic,
+  MicOff,
+  GraduationCap,
+  Stethoscope,
+  Briefcase,
+  Palette,
+  MoreHorizontal,
+  Sparkles,
+  Loader2,
+  X,
+} from "lucide-react";
+import {
+  isSpeechRecognitionSupported,
+  startSpeechSession,
+  SpeechSessionController,
+  SpeechState,
+} from "../../lib/voice";
 
 interface ConversationalHeroProps {
   onSearch: (query: string) => void;
@@ -15,8 +31,6 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   onSearch,
   onOpenAssistantWithQuery,
   onExplore,
-  onRate,
-  onMatch,
 }) => {
   const [query, setQuery] = useState("");
   const [speechState, setSpeechState] = useState<SpeechState>("idle");
@@ -64,7 +78,6 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
   const handleVoiceToggle = () => {
     setVoiceError(null);
 
-    // If currently listening, clicking mic acts as Cancel
     if (isListening || isProcessing) {
       if (sessionControllerRef.current) {
         sessionControllerRef.current.abort();
@@ -79,79 +92,54 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
       return;
     }
 
-    // SECTION 3.A: Immediately clear previous search text on new session
     setQuery("");
     lastSearchedRef.current = "";
 
     const controller = startSpeechSession({
-      silenceTimeoutMs: 3500, // 3.5 seconds inactivity timeout
+      silenceTimeoutMs: 3500,
       autoStopOnSilence: true,
       onStateChange: (state) => {
         setSpeechState(state);
       },
       onInterimTranscript: (combined) => {
-        // SECTION 3.B: Live dynamic transcription inside search field
         setQuery(combined);
       },
       onSilenceTimeout: (finalTranscript) => {
-        // SECTION 3.C & 3.D: Auto stop and search after 3.5s silence
         const target = (finalTranscript || query).trim();
+        if (target) {
+          setQuery(target);
+          executeSearch(target);
+        } else {
+          setSpeechState("idle");
+        }
+      },
+      onFinalTranscript: (transcript) => {
+        const target = transcript.trim();
         if (target) {
           setQuery(target);
           executeSearch(target);
         }
       },
-      onFinalTranscript: (finalTranscript) => {
-        // Handle pending final results if speech engine finalized and stopped before silence timeout
-        const target = (finalTranscript || query).trim();
-        if (target) {
-          setQuery(target);
-          executeSearch(target);
-        }
-      },
-      onError: (errorMsg) => {
-        sessionControllerRef.current = null;
-        setSpeechState("error");
-        setVoiceError(errorMsg);
-      },
-      onEnd: () => {
-        sessionControllerRef.current = null;
+      onError: (err) => {
+        setVoiceError(err);
+        setSpeechState("idle");
       },
     });
 
     sessionControllerRef.current = controller;
   };
 
-  const handleStopAndSearch = () => {
-    if (sessionControllerRef.current) {
-      sessionControllerRef.current.stop();
-      sessionControllerRef.current = null;
-    }
-    executeSearch(query);
-  };
-
-  const handleCancelVoice = () => {
-    if (sessionControllerRef.current) {
-      sessionControllerRef.current.abort();
-      sessionControllerRef.current = null;
-    }
-    setSpeechState("idle");
-  };
-
-  const isConversational = (text: string) => {
-    const lower = text.toLowerCase().trim();
+  const isConversational = (text: string): boolean => {
+    const lower = text.toLowerCase();
     return (
-      lower.startsWith("what") ||
       lower.startsWith("how") ||
-      lower.startsWith("why") ||
-      lower.startsWith("tell") ||
-      lower.startsWith("can") ||
+      lower.startsWith("what") ||
+      lower.startsWith("tell me") ||
+      lower.startsWith("compare") ||
       lower.startsWith("is ") ||
       lower.startsWith("which") ||
       lower.startsWith("show me") ||
       lower.startsWith("find me") ||
-      lower.includes("score of") ||
-      lower.includes("ratings at") ||
       lower.includes("placements at") ||
       lower.includes("hostels at") ||
       lower.includes("reviews for") ||
@@ -168,211 +156,148 @@ export const ConversationalHero: React.FC<ConversationalHeroProps> = ({
     executeSearch(query);
   };
 
+  const categoryChips = [
+    { label: "Engineering", icon: GraduationCap, query: "Engineering" },
+    { label: "Medical", icon: Stethoscope, query: "Medical" },
+    { label: "MBA", icon: Briefcase, query: "MBA" },
+    { label: "Arts", icon: Palette, query: "Arts" },
+    { label: "More", icon: MoreHorizontal, query: "" },
+  ];
+
   return (
-    <section className="relative overflow-hidden bg-paper flex items-center">
-      {/* 1. Cinematic Full-Bleed Campus Photograph Layer (Both Mobile and Desktop) */}
-      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
-        <img
-          src="/images/hero_quad.jpg"
-          alt="Indian university campus quad with students gathered on stone steps in candid discussion"
-          className="w-full h-full object-cover object-[78%_35%] md:object-[75%_35%] lg:object-[72%_30%] translate-x-[8%] md:translate-x-[10%] transition-opacity duration-700 opacity-80 sm:opacity-90 md:opacity-100"
-          loading="eager"
-        />
-
-        {/* Multi-stop horizontal ivory gradient blend */}
-        <div className="hero-gradient-horizontal" />
-
-        {/* Top subtle fade for seamless header border blend */}
-        <div className="hero-top-fade" />
-
-        {/* Bottom subtle fade for seamless divider transition */}
-        <div className="hero-bottom-fade" />
+    <section className="pt-4 sm:pt-8 pb-3 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans">
+      {/* Display Heading (Matches Reference Image 1 Screen 3 & Image 2 Screen 4) */}
+      <div className="mb-4 text-left">
+        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-charcoal tracking-tight leading-tight">
+          Find your college, your way.
+        </h1>
+        <p className="text-xs sm:text-sm text-charcoal-muted mt-1 leading-relaxed">
+          Authentic reviews, ratings, and unfiltered campus insights.
+        </p>
       </div>
 
-      {/* 2. Left-Anchored Editorial & Interactive Content Container */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6 sm:py-12 md:py-20 lg:py-24">
-        <div className="max-w-xl lg:max-w-2xl flex flex-col justify-center">
-          {/* Display Headline */}
-          <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl lg:text-[3.75rem] font-bold tracking-tight text-charcoal mb-2.5 sm:mb-4 leading-[1.12]">
-            College life. <br />
-            <span className="italic font-normal text-olive">Without the editing.</span>
-          </h1>
+      {/* Pill Search Input Form (Matches Reference Image 1 Screen 3) */}
+      <form onSubmit={handleSubmit} className="relative mb-5">
+        <div
+          className={`flex items-center w-full bg-white rounded-full border px-4 py-2.5 sm:py-3 shadow-subtle transition-all ${
+            isListening
+              ? "border-olive ring-2 ring-olive/20"
+              : "border-warm-grey focus-within:border-charcoal focus-within:ring-1 focus-within:ring-charcoal/10"
+          }`}
+        >
+          <Search className="w-4 h-4 text-charcoal-muted shrink-0 mr-2.5" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              isListening
+                ? "Listening... speak now"
+                : "Search colleges, cities or courses..."
+            }
+            className="w-full bg-transparent text-xs sm:text-sm text-charcoal placeholder:text-charcoal-muted/60 focus:outline-none font-sans"
+          />
 
-          {/* Concise Supporting Text */}
-          <p className="text-xs sm:text-base text-charcoal-muted max-w-xl mb-3 sm:mb-5 leading-relaxed font-sans">
-            Surface the lived experiences behind prospectus claims. Unedited ratings across food quality, hostels, faculty accessibility, ragging prevention, and placements—governed by deterministic 20-submission blocks.
-          </p>
-
-          {/* Micro-label above search for focal clarity */}
-          <label htmlFor="hero-search-input" className="block text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal/70 mb-1.5 font-medium">
-            Search verified metrics or ask AI directly
-          </label>
-
-          {/* Conversational Text & Voice Search Box */}
-          <form
-            onSubmit={handleSubmit}
-            className={`editorial-card p-1 sm:p-1.5 bg-card shadow-card max-w-xl mb-2.5 sm:mb-3 transition-all rounded flex items-center gap-1.5 ${
-              isListening ? "border-olive ring-2 ring-olive/20" : "border-charcoal/20 focus-within:border-olive focus-within:ring-2 focus-within:ring-olive/20"
-            }`}
-          >
-            <Search className="w-4 h-4 text-charcoal-muted ml-2 shrink-0" />
-            <input
-              id="hero-search-input"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                isListening
-                  ? "Listening... speak query now"
-                  : "Search colleges, city, or ask AI..."
-              }
-              className="w-full bg-transparent px-2 py-2 text-xs sm:text-sm text-charcoal placeholder:text-charcoal-muted/60 focus:outline-none font-sans min-w-0"
-            />
+          {query && !isListening && (
             <button
               type="button"
-              onClick={handleVoiceToggle}
-              title={isListening ? "Cancel voice search" : "Search with voice"}
-              className={`w-9 h-9 flex items-center justify-center rounded transition-colors shrink-0 ${
-                isListening
-                  ? "bg-rose-600 text-white animate-pulse"
-                  : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
-              }`}
-              aria-label={isListening ? "Cancel voice search" : "Search with voice"}
+              onClick={() => setQuery("")}
+              className="p-1 text-charcoal-muted hover:text-charcoal shrink-0 mr-1"
+              aria-label="Clear search"
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <X className="w-3.5 h-3.5" />
             </button>
-            <button
-              type="submit"
-              disabled={isProcessing}
-              className="btn-primary min-h-[38px] px-3.5 py-2 text-xs font-semibold flex items-center justify-center gap-1 shrink-0 rounded"
-              title="Search or explore"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <>
-                  <span className="hidden xs:inline">Search</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* SECTION 3.E: Live Speech Feedback & Controls Strip */}
-          {(isListening || isProcessing) && (
-            <div className="mb-3 p-2.5 rounded bg-card/95 border border-olive/40 shadow-xs flex items-center justify-between gap-2 max-w-xl animate-in fade-in text-xs font-sans">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
-                </span>
-                <span className="font-medium text-charcoal truncate">
-                  {speechState === "starting" && "Opening microphone..."}
-                  {speechState === "listening" && (
-                    <>
-                      Listening... <span className="text-charcoal-muted font-normal hidden sm:inline">(auto-searches after 3.5s silence)</span>
-                    </>
-                  )}
-                  {speechState === "processing" && "Finishing what you said..."}
-                  {speechState === "submitting" && `Searching for "${query}"...`}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleStopAndSearch}
-                  disabled={!query.trim()}
-                  className="px-2.5 py-1 rounded bg-olive text-paper hover:bg-olive-dark text-[11px] font-semibold flex items-center gap-1 disabled:opacity-40 transition-colors min-h-[28px]"
-                  title="Search immediately without waiting for silence"
-                >
-                  <span>Search Now</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelVoice}
-                  className="p-1 rounded text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
-                  title="Cancel voice search"
-                  aria-label="Cancel voice search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
           )}
 
-          {/* Voice Feedback / Error Banner */}
-          {voiceError && (
-            <div className="mb-3 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between max-w-xl">
-              <span>{voiceError}</span>
-              <button
-                type="button"
-                onClick={() => setVoiceError(null)}
-                className="text-rose-600 hover:text-rose-900 font-bold ml-2 text-sm"
-              >
-                ×
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={handleVoiceToggle}
+            title={isListening ? "Cancel voice" : "Voice search"}
+            className={`p-1.5 rounded-full transition-colors shrink-0 ml-1 ${
+              isListening
+                ? "bg-rose-600 text-white animate-pulse"
+                : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light"
+            }`}
+            aria-label="Voice search"
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        </div>
+      </form>
 
-          {/* Suggested Prompt Chips & AI Trigger */}
-          <div className="flex flex-wrap items-center gap-1.5 max-w-xl mb-5 sm:mb-6">
+      {/* Live Voice Feedback Strip */}
+      {(isListening || isProcessing) && (
+        <div className="mb-4 p-2.5 rounded-xl bg-card border border-olive/30 shadow-subtle flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
+            </span>
+            <span className="text-charcoal font-medium">
+              {isListening ? "Listening for your search..." : "Searching..."}
+            </span>
+          </div>
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-olive" />
+        </div>
+      )}
+
+      {voiceError && (
+        <div className="mb-4 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <span>{voiceError}</span>
+          <button type="button" onClick={() => setVoiceError(null)} className="font-bold text-xs">
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* 5 Category Quick Filter Circles (Matches Reference Image 1 Screen 3) */}
+      <div className="grid grid-cols-5 gap-2 sm:gap-3 py-1 mb-4 select-none">
+        {categoryChips.map((chip) => {
+          const Icon = chip.icon;
+          return (
             <button
+              key={chip.label}
               type="button"
               onClick={() => {
-                const targetQuery = query.trim() || "What can you tell me about the colleges on Campus Uncut?";
-                onOpenAssistantWithQuery(targetQuery);
+                if (chip.query) {
+                  onSearch(chip.query);
+                } else {
+                  onExplore();
+                }
               }}
-              title="Ask AI Assistant directly"
-              className="px-2.5 py-1.5 rounded-full bg-olive-light border border-olive/40 text-olive hover:bg-olive hover:text-paper text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
+              className="flex flex-col items-center justify-center group focus:outline-none"
             >
-              <Sparkles className="w-3 h-3" />
-              <span>Ask AI</span>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-card border border-warm-grey group-hover:border-charcoal group-hover:bg-white flex items-center justify-center text-charcoal shadow-subtle transition-all duration-200 group-active:scale-95">
+                <Icon className="w-5 h-5 text-charcoal group-hover:text-olive transition-colors" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-medium text-charcoal mt-1.5 group-hover:text-charcoal transition-colors truncate max-w-full">
+                {chip.label}
+              </span>
             </button>
-            {[
-              "Search SFIT",
-              "Score of COEP",
-              "Placements at VJTI",
-              "Colleges in Mumbai",
-            ].map((sample) => (
-              <button
-                key={sample}
-                type="button"
-                onClick={() => onOpenAssistantWithQuery(sample)}
-                className="px-2.5 py-1.5 rounded-full bg-card border border-warm-grey hover:border-olive hover:text-charcoal text-[11px] font-sans shrink-0 transition-colors shadow-2xs"
-              >
-                {sample}
-              </button>
-            ))}
-          </div>
+          );
+        })}
+      </div>
 
-          {/* Primary Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 max-w-xl">
-            {onMatch && (
-              <button
-                onClick={onMatch}
-                className="btn-primary min-h-[44px] text-xs py-2.5 px-5 font-semibold flex items-center justify-center gap-2 shadow-xs bg-[#727D60] hover:bg-[#5E684E] text-[#F5F2EB]"
-              >
-                <Compass className="w-4 h-4 text-[#D4DEC3]" />
-                <span>Find My Fit (Match Engine)</span>
-              </button>
-            )}
-            <button
-              onClick={onExplore}
-              className="btn-secondary min-h-[44px] text-xs py-2.5 px-5 font-semibold bg-card border border-warm-grey hover:border-charcoal text-charcoal flex items-center justify-center gap-2 shadow-xs"
-            >
-              <BookOpen className="w-4 h-4 text-charcoal-muted" />
-              <span>Explore Directory</span>
-            </button>
-            <button
-              onClick={onRate}
-              className="btn-secondary min-h-[44px] text-xs py-2.5 px-5 font-semibold bg-card border border-warm-grey hover:border-charcoal text-charcoal flex items-center justify-center gap-2 shadow-xs"
-            >
-              <MessageSquareQuote className="w-4 h-4 text-olive" />
-              <span>Rate Campus</span>
-            </button>
-          </div>
-        </div>
+      {/* AI Suggested Query Pill (Matches Reference Image 1 Screen 9) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+        <button
+          type="button"
+          onClick={() => onOpenAssistantWithQuery("Tell me about top colleges in Mumbai")}
+          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-olive-light/60 border border-olive/30 text-olive text-[11px] font-semibold whitespace-nowrap shrink-0 hover:bg-olive hover:text-white transition-colors"
+        >
+          <Sparkles className="w-3 h-3" />
+          <span>Ask AI Assistant</span>
+        </button>
+        {["Colleges in Pune", "Top Engineering", "Placement records"].map((sample) => (
+          <button
+            key={sample}
+            type="button"
+            onClick={() => onSearch(sample)}
+            className="px-3 py-1 rounded-full bg-card border border-warm-grey hover:border-charcoal text-[11px] font-sans text-charcoal-muted whitespace-nowrap shrink-0 transition-colors"
+          >
+            {sample}
+          </button>
+        ))}
       </div>
     </section>
   );

@@ -47,7 +47,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
 
   return (
     <div
-      className={`rounded-lg border p-4 bg-paper/60 transition-all ${analysis.badgeBorderClass} ${className}`}
+      className={`rounded-xl border p-4 bg-paper/70 transition-all ${analysis.badgeBorderClass} ${className}`}
     >
       {/* Header: Title & Verdict Badge */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-warm-grey/60 mb-3">
@@ -62,7 +62,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
 
         {/* Verdict Badge */}
         <div
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold border self-start sm:self-auto ${analysis.badgeColorClass} ${analysis.badgeBorderClass} ${analysis.textColorClass}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border self-start sm:self-auto ${analysis.badgeColorClass} ${analysis.badgeBorderClass} ${analysis.textColorClass}`}
         >
           {getVerdictIcon(analysis.verdictType)}
           <span>{analysis.verdictLabel}</span>
@@ -84,7 +84,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             {/* Low Band */}
-            <div className="p-2 rounded bg-rose-50 border border-rose-200">
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200">
               <span className="text-[10px] font-mono uppercase tracking-wider text-rose-800 font-bold block mb-0.5">
                 Low (&lt;4.0)
               </span>
@@ -97,7 +97,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
             </div>
 
             {/* Neutral Band */}
-            <div className="p-2 rounded bg-warm-grey-light/70 border border-warm-grey">
+            <div className="p-2.5 rounded-lg bg-warm-grey-light/70 border border-warm-grey">
               <span className="text-[10px] font-mono uppercase tracking-wider text-charcoal-muted font-bold block mb-0.5">
                 Neutral (4.0–7.9)
               </span>
@@ -110,7 +110,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
             </div>
 
             {/* High Band */}
-            <div className="p-2 rounded bg-emerald-50 border border-emerald-200">
+            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
               <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-800 font-bold block mb-0.5">
                 High (&ge;8.0)
               </span>
@@ -127,7 +127,7 @@ export const SplitVerdictCard: React.FC<SplitVerdictCardProps> = ({
 
       {/* 1 to 10 Frequency Histogram */}
       {distributions && distributions.length > 0 && analysis.totalNumericVotes > 0 && (
-        <div className="p-3 bg-card rounded border border-warm-grey/70">
+        <div className="p-3 bg-card rounded-xl border border-warm-grey/70">
           <div className="flex items-center justify-between text-[10px] font-mono text-charcoal-muted uppercase mb-2">
             <span>Score Density Distribution</span>
             <span>Average: {analysis.meanScore ? analysis.meanScore.toFixed(1) : "—"} / 10</span>

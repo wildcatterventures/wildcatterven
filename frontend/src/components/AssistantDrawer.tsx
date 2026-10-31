@@ -8,6 +8,7 @@ import {
   VolumeX,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   HelpCircle,
   CheckCircle2,
   MapPin,
@@ -451,10 +452,10 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop Scrim */}
+    <>
+      {/* Backdrop Scrim — Stays below header & above bottom nav on mobile */}
       <div
-        className="fixed inset-0 bg-charcoal/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-x-0 assistant-drawer-top-mobile assistant-drawer-mobile md:top-0 md:bottom-0 bg-charcoal/50 backdrop-blur-xs transition-opacity z-40 md:z-50"
         onClick={() => {
           stopSpeaking();
           onClose();
@@ -465,45 +466,35 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Campus Intelligence Assistant"
-        className="fixed inset-y-0 right-0 w-full sm:w-[460px] max-w-full bg-card border-l border-warm-grey z-50 shadow-2xl flex flex-col font-sans animate-in slide-in-from-right duration-200"
+        aria-label="Campus Assistant"
+        className="fixed right-0 w-full sm:w-[460px] max-w-full bg-card border-l border-warm-grey z-40 md:z-50 shadow-2xl flex flex-col font-sans animate-in slide-in-from-right duration-200 assistant-drawer-top-mobile assistant-drawer-mobile md:top-0 md:bottom-0"
       >
         {/* Drawer Header */}
-        <div className="p-4 border-b border-warm-grey flex items-center justify-between bg-paper">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded bg-olive-light flex items-center justify-center text-olive border border-olive/20">
-            <Sparkles className="w-4 h-4" />
+        <div className="p-3.5 sm:p-4 border-b border-warm-grey flex items-center justify-between bg-paper shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                stopSpeaking();
+                onClose();
+              }}
+              className="w-8 h-8 rounded-full hover:bg-warm-grey-light flex items-center justify-center text-charcoal -ml-1 transition-colors"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div className="w-8 h-8 rounded-full bg-olive-light flex items-center justify-center text-olive border border-olive/20 shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-serif font-bold text-base text-charcoal">
+                Campus Assistant
+              </h2>
+              <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-olive font-medium">Online</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="font-serif font-bold text-base text-charcoal">
-              Campus Intelligence
-            </h2>
-            {(() => {
-              const latestAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-              const prov = latestAssistant?.providerUsed?.toLowerCase() || "";
-              const isGroq = prov === "groq";
-              const isFallback = prov === "mock_fallback";
-              let label = "AI Assistant Ready";
-              let dotClass = "bg-emerald-500";
-              if (isGroq) {
-                label = "Groq LLM Active";
-                dotClass = "bg-emerald-500 animate-pulse";
-              } else if (isFallback) {
-                label = "Deterministic Fallback Active";
-                dotClass = "bg-amber-500";
-              } else if (prov === "mock") {
-                label = "Deterministic Engine Active";
-                dotClass = "bg-olive";
-              }
-              return (
-                <div className="text-[11px] text-charcoal-muted flex items-center gap-1.5 font-mono">
-                  <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
-                  <span>{label}</span>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
 
         <div className="flex items-center gap-1">
           {isSpeechSynthesisSupported() && (
@@ -547,13 +538,18 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           return (
             <div
               key={m.id}
-              className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+              className={`flex ${isUser ? "justify-end" : "justify-start items-start gap-2"}`}
             >
+              {!isUser && (
+                <div className="w-6 h-6 rounded-full bg-olive-light border border-olive/30 text-olive font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                  CU
+                </div>
+              )}
               <div
-                className={`max-w-[92%] text-xs sm:text-sm p-4 rounded-lg leading-relaxed ${
+                className={`max-w-[86%] text-xs sm:text-sm p-3.5 sm:p-4 rounded-2xl leading-relaxed ${
                   isUser
-                    ? "bg-charcoal text-paper rounded-br-none shadow-sm"
-                    : "bg-paper border border-warm-grey text-charcoal rounded-bl-none shadow-subtle"
+                    ? "bg-[#727D60] text-white rounded-tr-xs shadow-sm"
+                    : "bg-white border border-[#E5E1D8] text-[#252724] rounded-tl-xs shadow-subtle"
                 }`}
               >
                 {/* Clean, readable message text formatted without raw asterisks */}
@@ -889,37 +885,37 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
         )}
       </div>
 
-      {/* Suggested Quick Prompts */}
-      <div className="px-4 py-2 border-t border-warm-grey bg-paper flex items-center gap-1.5 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
+      {/* Suggested Quick Prompts (Matches Reference Image 1 Screen 9 & Reference Image 2 Screen 10) */}
+      <div className="px-4 py-2 border-t border-warm-grey bg-paper flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none shrink-0">
         <button
-          onClick={() => handleSendMessage("Search for SFIT")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
+          onClick={() => handleSendMessage("Compare with VJTI")}
+          className="px-3 py-1.5 rounded-full bg-card border border-warm-grey text-charcoal hover:border-olive hover:bg-white text-xs transition-colors font-medium shadow-subtle"
         >
-          Search SFIT
+          Compare with VJTI
         </button>
         <button
-          onClick={() => handleSendMessage("What is the score of COEP?")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
+          onClick={() => handleSendMessage("What is the average package?")}
+          className="px-3 py-1.5 rounded-full bg-card border border-warm-grey text-charcoal hover:border-olive hover:bg-white text-xs transition-colors font-medium shadow-subtle"
         >
-          Score of COEP
+          Average package?
         </button>
         <button
-          onClick={() => handleSendMessage("How are placements at VJTI?")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
+          onClick={() => handleSendMessage("Who are the top recruiters?")}
+          className="px-3 py-1.5 rounded-full bg-card border border-warm-grey text-charcoal hover:border-olive hover:bg-white text-xs transition-colors font-medium shadow-subtle"
         >
-          Placements VJTI
+          Top recruiters
         </button>
         <button
-          onClick={() => handleSendMessage("List rating parameters")}
-          className="px-2.5 py-1 rounded bg-card border border-warm-grey text-charcoal-muted hover:text-charcoal text-[11px] hover:border-olive transition-colors"
+          onClick={() => handleSendMessage("Tell me about COEP")}
+          className="px-3 py-1.5 rounded-full bg-card border border-warm-grey text-charcoal hover:border-olive hover:bg-white text-xs transition-colors font-medium shadow-subtle"
         >
-          Question Bank
+          Tell me about COEP
         </button>
       </div>
 
       {/* Voice Error Notification */}
       {voiceError && (
-        <div className="mx-3 mt-2 p-2 rounded bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-center justify-between">
+        <div className="mx-3 mt-2 p-2 rounded bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-center justify-between shrink-0">
           <span>{voiceError}</span>
           <button
             type="button"
@@ -931,8 +927,8 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="p-3 pb-safe border-t border-warm-grey bg-card">
+      {/* Input Area (Matches Reference Image 1 Screen 9 & Reference Image 2 Screen 10) */}
+      <div className="p-3 border-t border-warm-grey bg-paper shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -940,39 +936,40 @@ export const AssistantDrawer: React.FC<AssistantDrawerProps> = ({
           }}
           className="flex items-center gap-2"
         >
+          <button
+            type="button"
+            onClick={toggleListening}
+            title={isListening ? "Stop listening" : "Speak with voice"}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-subtle ${
+              isListening
+                ? "bg-rose-600 text-white animate-pulse"
+                : "text-charcoal-muted hover:text-charcoal border border-warm-grey bg-card"
+            }`}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-olive" />}
+          </button>
+
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
-              isListening ? "Listening... speak now" : "Ask about scores, ratings, or campuses..."
+              isListening ? "Listening... speak now" : "Ask anything about colleges..."
             }
-            className="flex-1 min-h-[44px] px-3 py-2 text-xs sm:text-sm bg-paper border border-warm-grey rounded focus:outline-none focus:border-olive font-sans"
+            className="flex-1 min-h-[42px] px-4 py-2 text-xs sm:text-sm bg-card border border-warm-grey rounded-full focus:outline-none focus:border-olive text-charcoal font-sans placeholder:text-charcoal-muted/60"
           />
-
-          <button
-            type="button"
-            onClick={toggleListening}
-            title={isListening ? "Stop listening" : "Speak with voice"}
-            className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded transition-colors ${
-              isListening
-                ? "bg-rose-600 text-white animate-pulse"
-                : "text-charcoal-muted hover:text-charcoal border border-warm-grey bg-paper"
-            }`}
-          >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          </button>
 
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="btn-primary min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 text-xs"
+            className="w-10 h-10 rounded-full bg-olive text-white hover:bg-olive-dark flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-sm active:scale-95"
+            aria-label="Send query"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       </div>
     </div>
-  </div>
+  </>
   );
 };

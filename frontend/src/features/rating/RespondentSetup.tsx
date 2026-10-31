@@ -141,8 +141,8 @@ export const RespondentSetup: React.FC<RespondentSetupProps> = ({
 
 
   return (
-    <div className="py-6 sm:py-12 px-3 sm:px-4 max-w-2xl mx-auto font-sans">
-      <div className="editorial-card p-4 sm:p-8 md:p-10 bg-card">
+    <div className="py-6 sm:py-12 px-3 sm:px-4 max-w-2xl mx-auto font-sans pb-28 md:pb-12">
+      <div className="editorial-card p-5 sm:p-8 md:p-10 bg-card rounded-2xl border border-warm-grey shadow-card">
         <div className="mb-6 sm:mb-8">
           <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">
             Rating Flow • Step 1 of 3

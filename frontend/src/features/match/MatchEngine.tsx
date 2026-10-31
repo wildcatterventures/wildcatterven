@@ -154,7 +154,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({
   const activePrioritiesCount = Object.values(priorities).filter((w) => w > 0).length;
 
   return (
-    <div className="py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans">
+    <div className="py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans pb-28 md:pb-12">
       {/* 1. Header Banner */}
       <div className="editorial-card p-6 sm:p-10 bg-card border-warm-grey mb-8 shadow-card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

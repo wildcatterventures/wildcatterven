@@ -62,8 +62,8 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
     : { label: "Broader Feedback", color: "bg-emerald-100 text-emerald-900 border-emerald-300" };
 
   return (
-    <section className="mb-10">
-      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+    <section id="honest-verdict" className="mb-8 sm:mb-10">
+      <div className="editorial-card p-4 sm:p-6 bg-card border border-warm-grey rounded-2xl shadow-card">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>
@@ -87,7 +87,7 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
 
         {/* Cautious Editorial Notice for Small Sample Sizes (< 5 sessions) */}
         {isEarlySignal && (
-          <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-md bg-amber-50/70 border border-amber-200/90 text-xs font-sans text-amber-950 flex items-start gap-2.5 sm:gap-3">
+          <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-xl bg-amber-50/70 border border-amber-200/90 text-xs font-sans text-amber-950 flex items-start gap-2.5 sm:gap-3">
             <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <strong className="font-semibold text-amber-950">
@@ -103,7 +103,7 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {/* Favorable Signal */}
           {bestParam && (
-            <div className="p-4 sm:p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
+            <div className="p-4 sm:p-5 rounded-xl border border-warm-grey bg-paper/50 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -153,7 +153,7 @@ export const HonestVerdict: React.FC<HonestVerdictProps> = ({
 
           {/* Area to Investigate */}
           {worstParam && (
-            <div className="p-4 sm:p-5 rounded-md border border-warm-grey bg-paper/40 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
+            <div className="p-4 sm:p-5 rounded-xl border border-warm-grey bg-paper/50 flex flex-col justify-between hover:border-charcoal/40 transition-colors">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">

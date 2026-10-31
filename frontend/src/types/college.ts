@@ -1,9 +1,12 @@
+export type CollegeCategory = 'engineering' | 'medical' | 'mba' | 'arts';
+
 export interface CollegeSummary {
   college_id: string;
   name: string;
   short_code: string;
   city: string;
   state: string;
+  category?: CollegeCategory | string;
   is_demo: boolean;
   current_score: number;
   total_submitted_sessions: number;

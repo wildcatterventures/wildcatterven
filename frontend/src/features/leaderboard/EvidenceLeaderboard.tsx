@@ -165,7 +165,7 @@ export const EvidenceLeaderboard: React.FC<EvidenceLeaderboardProps> = ({
   }, [colleges, reports, selectedCategoryId]);
 
   return (
-    <div className="py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans">
+    <div className="py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans pb-28 md:pb-12">
       {/* 1. Page Header */}
       <div className="editorial-card p-6 sm:p-10 bg-card border-warm-grey mb-8 shadow-card">
         <div className="max-w-2xl">

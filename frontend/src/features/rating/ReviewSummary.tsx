@@ -55,7 +55,7 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({
   const isComplete = unansweredCount === 0;
 
   return (
-    <div className="py-6 sm:py-8 px-3.5 sm:px-6 max-w-4xl mx-auto font-sans">
+    <div className="py-6 sm:py-8 px-3.5 sm:px-6 max-w-4xl mx-auto font-sans pb-28 md:pb-12">
       <div className="mb-4 sm:mb-6 flex items-center justify-between">
         <button
           onClick={onBackToWizard}

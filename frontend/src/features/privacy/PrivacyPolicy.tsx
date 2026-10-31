@@ -23,7 +23,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
   const approvedContactEmail = "mathew.maxwell2021@gmail.com";
 
   return (
-    <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto font-sans text-charcoal">
+    <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto font-sans text-charcoal pb-28 md:pb-16">
       {/* Navigation Header */}
       <div className="mb-8 flex items-center justify-between">
         <button

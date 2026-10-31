@@ -111,7 +111,7 @@ export const ScoringProgressionDemo: React.FC<ScoringProgressionDemoProps> = ({ 
   const hasCrossedBlock1 = currentCount >= SCORE_BLOCK_SIZE;
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] text-[#252724] pb-24 font-sans">
+    <div className="min-h-screen bg-[#F5F2EB] text-[#252724] pb-28 md:pb-16 font-sans">
       {/* 1. Header Banner with Mandated Prominent Watermark */}
       <header className="bg-[#252724] text-[#F5F2EB] border-b border-[#3A3D38] py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">

@@ -235,7 +235,7 @@ export const CampusCircle: React.FC<CampusCircleProps> = ({ onBackToHome, onNavi
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] text-[#252724] pb-24">
+    <div className="min-h-screen bg-[#F5F2EB] text-[#252724] pb-28 md:pb-16">
       {/* Top Banner & Header */}
       <div className="bg-[#252724] text-[#F5F2EB] border-b border-[#3A3D38] py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">

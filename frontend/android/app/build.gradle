@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+
+if (keystorePropertiesFile.canRead()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
 android {
     namespace = "com.wildcatterventures.campusuncut"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +25,63 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.canRead()) {
+                def storeFileProp = keystoreProperties.getProperty('storeFile')
+                if (storeFileProp) {
+                    storeFile = file(storeFileProp).isAbsolute() ? file(storeFileProp) : rootProject.file(storeFileProp)
+                }
+                storePassword = keystoreProperties.getProperty('storePassword')
+                keyAlias = keystoreProperties.getProperty('keyAlias')
+                keyPassword = keystoreProperties.getProperty('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def isReleaseBuild = taskGraph.allTasks.any { task ->
+        task.name in [
+            'assembleRelease',
+            'bundleRelease',
+            'packageRelease',
+            'packageReleaseBundle'
+        ]
+    }
+    if (isReleaseBuild) {
+        if (!keystorePropertiesFile.exists()) {
+            throw new GradleException(
+                "Release build failed: 'keystore.properties' is missing.\n" +
+                "Expected location: ${keystorePropertiesFile.absolutePath}\n" +
+                "Please create this file with storeFile, storePassword, keyAlias, and keyPassword."
+            )
+        }
+        def requiredProperties = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+        def missingProperties = requiredProperties.findAll { prop ->
+            def val = keystoreProperties.getProperty(prop)
+            val == null || val.trim().isEmpty()
+        }
+        if (!missingProperties.isEmpty()) {
+            throw new GradleException(
+                "Release build failed: 'keystore.properties' is incomplete.\n" +
+                "Missing or empty properties: ${missingProperties.join(', ')}\n" +
+                "Please configure all required properties: storeFile, storePassword, keyAlias, and keyPassword."
+            )
+        }
+        def storeFilePath = keystoreProperties.getProperty('storeFile')?.trim()
+        def resolvedStoreFile = storeFilePath ? (file(storeFilePath).isAbsolute() ? file(storeFilePath) : rootProject.file(storeFilePath)) : null
+        if (resolvedStoreFile == null || !resolvedStoreFile.exists()) {
+            throw new GradleException(
+                "Release build failed: Keystore storeFile does not exist at: ${resolvedStoreFile ? resolvedStoreFile.absolutePath : storeFilePath}"
+            )
         }
     }
 }

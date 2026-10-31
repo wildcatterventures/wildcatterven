@@ -13,9 +13,9 @@ export default {
         "warm-grey": "#E5E1D8",
         "warm-grey-light": "#F0EDE6",
         "warm-grey-dark": "#CAC5B8",
-        terracotta: "#C85A32",
+        terracotta: "#D9653B",
         "terracotta-light": "#FBECE7",
-        "terracotta-dark": "#9E401E",
+        "terracotta-dark": "#B84A22",
         card: "#FFFFFF",
       },
 

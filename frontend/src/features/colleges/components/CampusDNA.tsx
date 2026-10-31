@@ -19,7 +19,7 @@ export const CampusDNA: React.FC<CampusDNAProps> = ({
 
   return (
     <section className="mb-10">
-      <div className="editorial-card p-4 sm:p-6 bg-card border-warm-grey shadow-card">
+      <div className="editorial-card p-4 sm:p-6 bg-card border border-warm-grey rounded-2xl shadow-card">
         {/* Section Masthead */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-warm-grey pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
           <div>

@@ -21,8 +21,8 @@ export const SubmissionSuccess: React.FC<SubmissionSuccessProps> = ({
 
 
   return (
-    <div className="py-8 sm:py-12 px-3.5 sm:px-4 max-w-xl mx-auto font-sans">
-      <div className="editorial-card p-4 sm:p-8 md:p-10 bg-card text-center">
+    <div className="py-8 sm:py-12 px-3.5 sm:px-4 max-w-xl mx-auto font-sans pb-28 md:pb-12">
+      <div className="editorial-card p-5 sm:p-8 md:p-10 bg-card text-center rounded-2xl border border-warm-grey shadow-card">
         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-olive-light flex items-center justify-center mx-auto mb-3 sm:mb-4 text-olive">
           <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8" />
         </div>

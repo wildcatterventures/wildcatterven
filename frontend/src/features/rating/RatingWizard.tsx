@@ -483,6 +483,8 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   }, [currentIndex, inputMode, voiceStarted, viewState, parameters.length, announceOrPromptQuestion]);
 
   // Mode Switcher: Safely switches between Text and Voice while preserving answers
+  const [reflections, setReflections] = useState<Record<string, string>>({});
+
   const handleSwitchMode = (mode: "text" | "voice") => {
     if (mode === inputMode) return;
 
@@ -625,26 +627,64 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
   };
 
   return (
-    <div className="py-5 sm:py-8 px-3.5 sm:px-6 max-w-3xl mx-auto font-sans">
+    <div className="py-4 sm:py-8 px-3.5 sm:px-6 max-w-3xl mx-auto font-sans pb-28 md:pb-12">
       {/* Top Bar: Navigation & Review CTA */}
-      <div className="mb-3 sm:mb-4 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+      <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2.5">
         <button
           type="button"
           onClick={onExit}
-          className="text-xs font-semibold text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1.5 min-h-[36px]"
+          className="text-xs font-semibold text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1.5 min-h-[40px] px-2"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Session</span>
         </button>
 
+        <div className="text-center hidden sm:block">
+          <span className="font-serif font-bold text-sm text-charcoal">{college.name}</span>
+          <span className="text-[11px] font-mono text-charcoal-muted block">Student Rating Session</span>
+        </div>
+
         <button
           type="button"
           onClick={() => setViewState("review")}
-          className="btn-secondary text-xs py-1.5 px-3 min-h-[36px] flex items-center gap-1.5 font-medium self-start xs:self-auto"
+          className="btn-secondary text-xs py-1.5 px-3 min-h-[38px] flex items-center gap-1.5 font-medium rounded-xl"
         >
           <ListChecks className="w-4 h-4 text-olive" />
           <span>Review ({answeredCount}/25)</span>
         </button>
+      </div>
+
+      {/* 5-Category Stepper Nodes (Matches Reference Image 1 Screen 8) */}
+      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 px-2">
+        {Array.from(new Set(parameters.map((p) => p.parameter_category))).slice(0, 5).map((catName, idx) => {
+          const isCurrentCat = currentParam?.parameter_category === catName;
+          const catParams = parameters.filter((p) => p.parameter_category === catName);
+          const isCompletedCat = catParams.length > 0 && catParams.every((p) => Boolean(answers[p.parameter_id]));
+
+          return (
+            <div key={catName} className="flex items-center">
+              {idx > 0 && (
+                <div
+                  className={`w-4 sm:w-8 h-[2px] mr-2 sm:mr-4 transition-colors ${
+                    isCompletedCat ? "bg-olive" : "bg-warm-grey"
+                  }`}
+                />
+              )}
+              <div
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-mono font-bold transition-all ${
+                  isCurrentCat
+                    ? "bg-charcoal text-paper ring-2 ring-olive shadow-sm scale-110"
+                    : isCompletedCat
+                    ? "bg-olive text-paper"
+                    : "bg-warm-grey-light text-charcoal-muted border border-warm-grey"
+                }`}
+                title={catName}
+              >
+                {idx + 1}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* SECTION 4: Dual Input Mode Selector (Text vs Voice) */}
@@ -987,8 +1027,33 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
             disabled={savingAnswer}
           />
 
-          {/* Previous / Next Stepper */}
-          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-warm-grey flex items-center justify-between gap-3">
+          {/* Optional Reflection / Experience Note (Matches Reference Image 1 Screen 8 & Image 2 Screen 7) */}
+          <div className="mt-6 pt-5 border-t border-warm-grey">
+            <label className="block text-xs font-semibold text-charcoal mb-2">
+              What did you like or dislike? <span className="font-normal text-charcoal-muted">(Optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              maxLength={300}
+              value={currentParam ? reflections[currentParam.parameter_id] || "" : ""}
+              onChange={(e) => {
+                if (currentParam) {
+                  setReflections((prev) => ({
+                    ...prev,
+                    [currentParam.parameter_id]: e.target.value,
+                  }));
+                }
+              }}
+              placeholder="Share your personal experience..."
+              className="w-full p-3.5 text-xs sm:text-sm bg-paper border border-warm-grey rounded-xl focus:outline-none focus:border-olive text-charcoal font-sans transition-colors resize-none placeholder:text-charcoal-muted/60"
+            />
+            <div className="flex justify-end text-[10px] font-mono text-charcoal-muted mt-1">
+              {(currentParam && reflections[currentParam.parameter_id]?.length) || 0}/300
+            </div>
+          </div>
+
+          {/* Previous / Next Actions */}
+          <div className="mt-6 pt-5 border-t border-warm-grey flex items-center justify-between gap-3">
             <button
               type="button"
               disabled={currentIndex === 0}
@@ -999,10 +1064,10 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                 }
                 setCurrentIndex((prev) => Math.max(prev - 1, 0));
               }}
-              className="btn-secondary min-h-[44px] text-xs py-2 px-4 disabled:opacity-30 flex items-center gap-1.5"
+              className="min-h-[46px] px-6 py-2.5 rounded-xl border border-warm-grey bg-paper text-charcoal font-semibold text-xs sm:text-sm hover:bg-warm-grey-light transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-subtle active:scale-95"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Previous</span>
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
             </button>
 
             {currentIndex < parameters.length - 1 ? (
@@ -1015,19 +1080,19 @@ export const RatingWizard: React.FC<RatingWizardProps> = ({
                   }
                   setCurrentIndex((prev) => Math.min(prev + 1, parameters.length - 1));
                 }}
-                className="btn-secondary min-h-[44px] text-xs py-2 px-5 flex items-center gap-1.5 font-medium"
+                className="min-h-[46px] px-8 py-2.5 rounded-xl bg-olive text-paper font-bold text-xs sm:text-sm hover:bg-olive-dark shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>Next</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setViewState("review")}
-                className="btn-primary min-h-[44px] text-xs py-2 px-5 font-semibold flex items-center gap-1.5"
+                className="min-h-[46px] px-8 py-2.5 rounded-xl bg-charcoal text-paper font-bold text-xs sm:text-sm hover:bg-charcoal/90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>Proceed to Review</span>
-                <ListChecks className="w-4 h-4" />
+                <ListChecks className="w-4 h-4 text-paper" />
               </button>
             )}
           </div>

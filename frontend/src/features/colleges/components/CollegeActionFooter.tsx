@@ -17,7 +17,7 @@ export const CollegeActionFooter: React.FC<CollegeActionFooterProps> = ({
 }) => {
   return (
     <section className="mb-10 sm:mb-14">
-      <div className="editorial-card p-4 sm:p-6 md:p-8 bg-card border-warm-grey shadow-card">
+      <div className="editorial-card p-4 sm:p-6 md:p-8 bg-card border border-warm-grey rounded-2xl shadow-card">
         <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-warm-grey pb-4 sm:pb-5 mb-5 sm:mb-6 gap-3 sm:gap-4">
           <div>
             <span className="font-mono text-xs uppercase tracking-wider text-olive font-semibold">

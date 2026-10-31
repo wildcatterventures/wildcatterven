@@ -123,6 +123,12 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
     } else if (sectionId === "recruiters") {
       const el = document.getElementById("recruiter-landscape");
       if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else if (sectionId === "compare") {
+      const el = document.getElementById("college-comparison");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -139,6 +145,20 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
     }
   };
 
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  const dossierTabs = [
+    { id: "overview", label: "Overview" },
+    { id: "student-pulse", label: "Ratings" },
+    { id: "honest-verdict", label: "Reviews" },
+    { id: "college-comparison", label: "Compare" },
+  ];
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTab(tabId);
+    handleScrollToSection(tabId);
+  };
+
   if (loading) {
     return (
       <div className="py-28 px-4 max-w-5xl mx-auto text-center font-sans">
@@ -153,11 +173,11 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
   if (error || !college || !report) {
     return (
       <div className="py-20 px-4 max-w-xl mx-auto text-center font-sans">
-        <div className="p-5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-sm mb-6">
+        <div className="p-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm mb-6">
           <AlertCircle className="w-5 h-5 mx-auto mb-2 text-rose-600" />
           <span>{error || "College record not found in the registry."}</span>
         </div>
-        <button onClick={onBack} className="btn-secondary text-xs">
+        <button onClick={onBack} className="btn-secondary text-xs rounded-lg">
           ← Back to Registry
         </button>
       </div>
@@ -165,19 +185,46 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
   }
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto font-sans">
+    <div className="py-6 sm:py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto font-sans pb-28 md:pb-12">
       {/* SECTION A — Cinematic Editorial Campus Header */}
       <CollegeHeader
         college={college}
         dossier={dossier}
         onBack={onBack}
         onRate={onRate}
+        onCompare={() => handleScrollToSection("college-comparison")}
       />
+
+      {/* Sticky / In-Page Section Quick-Navigation Tab Bar */}
+      <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-paper/95 backdrop-blur-md border-y border-warm-grey mb-6 sm:mb-8 py-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+          {dossierTabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabClick(tab.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors touch-manipulation min-h-[32px] ${
+                  isActive
+                    ? "bg-charcoal text-paper font-semibold shadow-xs"
+                    : "text-charcoal-muted hover:text-charcoal hover:bg-warm-grey-light/50"
+                }`}
+              >
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* SECTION B — College at a Glance & What Makes This Campus Different */}
       <CollegeGlanceAndHighlights
         college={college}
         dossier={dossier}
+        report={report}
+        onRate={onRate}
+        onCompare={() => handleScrollToSection("college-comparison")}
       />
 
       {/* SECTION C — The Student Pulse: Visualizations & Parameter Explorer */}
@@ -191,11 +238,13 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
       />
 
       {/* SECTION C.2 — Head-to-Head College Comparison */}
-      <CollegeComparison
-        currentCollege={college}
-        currentReport={report}
-        allColleges={allColleges}
-      />
+      <div id="college-comparison">
+        <CollegeComparison
+          currentCollege={college}
+          currentReport={report}
+          allColleges={allColleges}
+        />
+      </div>
 
       {/* SECTION D — The Honest Verdict: Evidence-Based Pros & Cons */}
       <HonestVerdict
