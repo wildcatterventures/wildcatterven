@@ -2,25 +2,17 @@ import React, { useState, useEffect } from "react";
 import {
   ArrowLeftRight,
   Building2,
-  HelpCircle,
   AlertCircle,
-  RefreshCw,
   X,
   Plus,
-  Star,
+  RefreshCw,
+  HelpCircle,
 } from "lucide-react";
 import { api } from "../../../lib/api";
 import type { CollegeDetail, CollegeRatingReport, CollegeSummary } from "../../../types/college";
 import { THEMATIC_CATEGORIES } from "../../../lib/thematicCategories";
 import { getCollegeCategoryMetrics } from "../../../lib/matchEngine";
-import { getCollegePhoto } from "../CollegeCard";
-
-function getCollegeOverallAvg(rep: CollegeRatingReport | null): number | null {
-  if (!rep || !rep.parameters) return null;
-  const scored = rep.parameters.filter((p) => p.average_score !== null);
-  if (scored.length === 0) return null;
-  return scored.reduce((sum, p) => sum + (p.average_score || 0), 0) / scored.length;
-}
+import { getCollegePhoto, getStudentExperienceAverage } from "../CollegeCard";
 
 interface CollegeComparisonProps {
   currentCollege: CollegeDetail;
@@ -80,8 +72,8 @@ export const CollegeComparison: React.FC<CollegeComparisonProps> = ({
     };
   }, [targetCollegeId]);
 
-  const currentOverallAvg = getCollegeOverallAvg(currentReport);
-  const targetOverallAvg = getCollegeOverallAvg(targetReport);
+  const currentOverallAvg = getStudentExperienceAverage(currentCollege, currentReport);
+  const targetOverallAvg = targetCollege ? getStudentExperienceAverage(targetCollege, targetReport) : null;
 
   return (
     <div id="college-comparison" className="editorial-card p-4 sm:p-6 bg-card border border-warm-grey rounded-2xl shadow-card mb-10">
@@ -123,21 +115,15 @@ export const CollegeComparison: React.FC<CollegeComparisonProps> = ({
             <p className="text-[11px] text-charcoal-muted truncate">
               {currentCollege.city}, {currentCollege.state}
             </p>
-            <div className="flex items-center gap-1.5 mt-1">
-              {currentCollege.total_submitted_sessions > 0 ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warm-grey-light font-mono text-[10px] font-bold text-charcoal">
-                  <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                  {currentOverallAvg !== null
-                    ? currentOverallAvg.toFixed(1)
-                    : (currentCollege.current_score / 10).toFixed(1)}
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-warm-grey-light font-mono text-[10px] font-semibold text-charcoal-muted">
-                  Unrated
-                </span>
-              )}
-              <span className="text-[10px] font-mono text-charcoal-muted">
-                {currentCollege.total_submitted_sessions} reviews
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[10px] font-mono">
+              <span className="px-2 py-0.5 rounded bg-warm-grey-light font-bold text-charcoal">
+                Score: {currentCollege.current_score}/100
+              </span>
+              <span className={`px-2 py-0.5 rounded ${currentOverallAvg !== null ? "bg-olive-light/50 text-olive-dark font-bold" : "bg-warm-grey-light text-charcoal-muted"}`}>
+                Exp: {currentOverallAvg !== null ? `${currentOverallAvg.toFixed(1)}/10` : "No ratings"}
+              </span>
+              <span className="text-charcoal-muted ml-auto">
+                {currentCollege.total_submitted_sessions} rev
               </span>
             </div>
           </div>
@@ -158,21 +144,15 @@ export const CollegeComparison: React.FC<CollegeComparisonProps> = ({
               <p className="text-[11px] text-charcoal-muted truncate">
                 {targetCollege.city}, {targetCollege.state}
               </p>
-              <div className="flex items-center gap-1.5 mt-1">
-                {targetCollege.total_submitted_sessions > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warm-grey-light font-mono text-[10px] font-bold text-charcoal">
-                    <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                    {targetOverallAvg !== null
-                      ? targetOverallAvg.toFixed(1)
-                      : (targetCollege.current_score / 10).toFixed(1)}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-warm-grey-light font-mono text-[10px] font-semibold text-charcoal-muted">
-                    Unrated
-                  </span>
-                )}
-                <span className="text-[10px] font-mono text-charcoal-muted">
-                  {targetCollege.total_submitted_sessions} reviews
+              <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[10px] font-mono">
+                <span className="px-2 py-0.5 rounded bg-warm-grey-light font-bold text-charcoal">
+                  Score: {targetCollege.current_score}/100
+                </span>
+                <span className={`px-2 py-0.5 rounded ${targetOverallAvg !== null ? "bg-olive-light/50 text-olive-dark font-bold" : "bg-warm-grey-light text-charcoal-muted"}`}>
+                  Exp: {targetOverallAvg !== null ? `${targetOverallAvg.toFixed(1)}/10` : "No ratings"}
+                </span>
+                <span className="text-charcoal-muted ml-auto">
+                  {targetCollege.total_submitted_sessions} rev
                 </span>
               </div>
             </div>
@@ -277,28 +257,60 @@ export const CollegeComparison: React.FC<CollegeComparisonProps> = ({
                 <div className="col-span-3 text-center truncate">{targetCollege.name.split(" ")[0]}</div>
               </div>
 
-              {/* Overall Score Row */}
+              {/* Campus Uncut Institutional Score Row (/100) */}
+              <div className="grid grid-cols-12 gap-2 p-3 items-center border-b border-warm-grey/60 text-xs bg-warm-grey-light/30">
+                <div className="col-span-6 font-semibold text-charcoal">
+                  Campus Uncut Score
+                  <span className="block text-[10px] text-charcoal-muted font-normal">
+                    Base 100 • ±1 per 20 qualifying student evaluations
+                  </span>
+                </div>
+                <div className="col-span-3 text-center">
+                  <span className="inline-block px-2.5 py-1 rounded-lg bg-charcoal font-mono font-bold text-paper">
+                    {currentCollege.current_score}/100
+                  </span>
+                </div>
+                <div className="col-span-3 text-center">
+                  <span className="inline-block px-2.5 py-1 rounded-lg bg-charcoal font-mono font-bold text-paper">
+                    {targetCollege.current_score}/100
+                  </span>
+                </div>
+              </div>
+
+              {/* Student Experience Average Row (/10) */}
               <div className="grid grid-cols-12 gap-2 p-3 items-center border-b border-warm-grey/60 text-xs">
                 <div className="col-span-6 font-semibold text-charcoal">
-                  Overall Rating
-                </div>
-                <div className="col-span-3 text-center">
-                  <span className="inline-block px-2.5 py-1 rounded-lg bg-warm-grey-light font-mono font-bold text-charcoal">
-                    {currentCollege.total_submitted_sessions > 0
-                      ? (currentOverallAvg !== null
-                          ? currentOverallAvg.toFixed(1)
-                          : (currentCollege.current_score / 10).toFixed(1))
-                      : "Unrated"}
+                  Student Experience
+                  <span className="block text-[10px] text-charcoal-muted font-normal">
+                    Database average of submitted student rating sessions
                   </span>
                 </div>
                 <div className="col-span-3 text-center">
-                  <span className="inline-block px-2.5 py-1 rounded-lg bg-warm-grey-light font-mono font-bold text-charcoal">
-                    {targetCollege.total_submitted_sessions > 0
-                      ? (targetOverallAvg !== null
-                          ? targetOverallAvg.toFixed(1)
-                          : (targetCollege.current_score / 10).toFixed(1))
-                      : "Unrated"}
+                  <span className={`inline-block px-2.5 py-1 rounded-lg font-mono font-bold ${
+                    currentOverallAvg !== null ? "bg-olive-light text-olive" : "bg-warm-grey-light text-charcoal-muted"
+                  }`}>
+                    {currentOverallAvg !== null ? `${currentOverallAvg.toFixed(1)}/10` : "No ratings"}
                   </span>
+                </div>
+                <div className="col-span-3 text-center">
+                  <span className={`inline-block px-2.5 py-1 rounded-lg font-mono font-bold ${
+                    targetOverallAvg !== null ? "bg-olive-light text-olive" : "bg-warm-grey-light text-charcoal-muted"
+                  }`}>
+                    {targetOverallAvg !== null ? `${targetOverallAvg.toFixed(1)}/10` : "No ratings"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Authenticated Reviews Row */}
+              <div className="grid grid-cols-12 gap-2 p-3 items-center border-b border-warm-grey/60 text-xs">
+                <div className="col-span-6 font-semibold text-charcoal">
+                  Total Reviews
+                </div>
+                <div className="col-span-3 text-center font-mono font-semibold text-charcoal">
+                  {currentCollege.total_submitted_sessions}
+                </div>
+                <div className="col-span-3 text-center font-mono font-semibold text-charcoal">
+                  {targetCollege.total_submitted_sessions}
                 </div>
               </div>
 

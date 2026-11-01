@@ -89,6 +89,16 @@ class MockAsyncpgConnection:
                 ]
                 cur_student_cnt = len([s for s in sessions if s.get("respondent_role") == "current_student"])
                 alumni_cnt = len([s for s in sessions if s.get("respondent_role") == "alumnus"])
+                valid_ratings = [
+                    float(s["calculated_overall_rating"])
+                    for s in sessions
+                    if s.get("calculated_overall_rating") is not None
+                ]
+                student_experience_avg = (
+                    round(sum(valid_ratings) / len(valid_ratings), 2)
+                    if valid_ratings
+                    else None
+                )
 
                 item = {
                     "college_id": cid,
@@ -107,6 +117,8 @@ class MockAsyncpgConnection:
                     "alumni_submissions": alumni_cnt,
                     "email_domains": c.get("email_domains"),
                     "created_at": c["created_at"],
+                    "category": c.get("category", "engineering"),
+                    "student_experience_average": student_experience_avg,
                 }
                 res.append(item)
 
@@ -209,6 +221,16 @@ class MockAsyncpgConnection:
                 s for s in self.db_state["rating_sessions"].values()
                 if s["college_id"] == cid and s["status"] == "submitted"
             ]
+            valid_ratings = [
+                float(s["calculated_overall_rating"])
+                for s in sessions
+                if s.get("calculated_overall_rating") is not None
+            ]
+            student_experience_avg = (
+                round(sum(valid_ratings) / len(valid_ratings), 2)
+                if valid_ratings
+                else None
+            )
             return {
                 "college_id": cid,
                 "name": c["name"],
@@ -226,6 +248,8 @@ class MockAsyncpgConnection:
                 "alumni_submissions": len([s for s in sessions if s.get("respondent_role") == "alumnus"]),
                 "email_domains": c.get("email_domains"),
                 "created_at": c["created_at"],
+                "category": c.get("category", "engineering"),
+                "student_experience_average": student_experience_avg,
             }
 
         # v_college_summary by short_code

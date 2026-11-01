@@ -1,7 +1,11 @@
 import React from "react";
-import { ArrowRight, Star, Bookmark } from "lucide-react";
+import { ArrowRight, Bookmark } from "lucide-react";
 import type { CollegeSummary } from "../../types/college";
-import { getCollegePhoto, getCollegeCardTags } from "../colleges/CollegeCard";
+import {
+  getCollegePhoto,
+  getCollegeCardTags,
+  getStudentExperienceAverage,
+} from "../colleges/CollegeCard";
 
 interface FeaturedCollegesProps {
   colleges: CollegeSummary[];
@@ -17,15 +21,9 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
   onSelectCollege,
   onExploreAll,
 }) => {
-  const getScoreDisplay = (score: number) => {
-    if (score >= 90) return (score / 10).toFixed(1);
-    if (score >= 10) return (score / 10).toFixed(1);
-    return score.toFixed(1);
-  };
-
   return (
     <section className="py-4 sm:py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans">
-      {/* Section Header (Matches Reference Image 1 Screen 3) */}
+      {/* Section Header */}
       <div className="flex items-center justify-between mb-4 px-1">
         <h2 className="font-serif text-xl sm:text-2xl font-bold text-charcoal tracking-tight">
           Featured Colleges
@@ -50,13 +48,12 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
           ))}
         </div>
       ) : (
-        /* Vertical Stack of Large Landscape College Cards (Matches Reference Image 1 Screen 3) */
+        /* Vertical Stack of Large Landscape College Cards */
         <div className="space-y-5 mb-8">
           {colleges.slice(0, 4).map((college) => {
             const photoUrl = getCollegePhoto(college);
             const tags = getCollegeCardTags(college);
-            const hasRatings = college.total_submitted_sessions > 0;
-            const scoreFormatted = getScoreDisplay(college.current_score);
+            const studentExp = getStudentExperienceAverage(college);
 
             return (
               <div
@@ -74,17 +71,10 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Top-Left Floating Score Pill (Matches Reference Image 1 Screen 3) */}
-                  {hasRatings ? (
-                    <div className="absolute top-3.5 left-3.5 flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md shadow-md text-xs font-mono font-bold text-charcoal border border-white/40">
-                      <span>{scoreFormatted}</span>
-                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                    </div>
-                  ) : (
-                    <div className="absolute top-3.5 left-3.5 flex items-center px-2.5 py-1 rounded-full bg-paper/95 backdrop-blur-md shadow-md text-xs font-mono font-semibold text-charcoal-muted border border-warm-grey">
-                      <span>Unrated</span>
-                    </div>
-                  )}
+                  {/* Top-Left Floating Score Pill */}
+                  <div className="absolute top-3.5 left-3.5 flex items-center px-3 py-1 rounded-full bg-white/95 backdrop-blur-md shadow-md text-xs font-mono font-bold text-charcoal border border-white/40">
+                    <span>Score {college.current_score}/100</span>
+                  </div>
 
                   {/* Top-Right Floating Bookmark / Save Button */}
                   <div className="absolute top-3.5 right-3.5">
@@ -103,12 +93,36 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
 
                 {/* College Info & Tags Bar */}
                 <div className="p-4 sm:p-5">
-                  <h3 className="font-serif text-lg sm:text-xl font-bold text-charcoal leading-snug group-hover:text-olive transition-colors">
-                    {college.name}
-                  </h3>
-                  <p className="text-xs text-charcoal-muted mt-1 font-sans">
-                    {college.city}, {college.state}
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-serif text-lg sm:text-xl font-bold text-charcoal leading-snug group-hover:text-olive transition-colors">
+                        {college.name}
+                      </h3>
+                      <p className="text-xs text-charcoal-muted mt-1 font-sans">
+                        {college.city}, {college.state}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dual Score Presentation */}
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-warm-grey/60 text-xs font-sans">
+                    <div className="p-2 rounded-xl bg-warm-grey-light/50 border border-warm-grey/40">
+                      <div className="text-[10px] uppercase tracking-wider text-charcoal-muted font-mono font-medium">
+                        Campus Uncut Score
+                      </div>
+                      <div className="font-mono font-bold text-charcoal text-sm sm:text-base mt-0.5">
+                        {college.current_score}/100
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-warm-grey-light/50 border border-warm-grey/40">
+                      <div className="text-[10px] uppercase tracking-wider text-charcoal-muted font-mono font-medium">
+                        Student Experience
+                      </div>
+                      <div className={`font-mono font-bold text-sm sm:text-base mt-0.5 ${studentExp !== null ? "text-olive-dark" : "text-charcoal-muted"}`}>
+                        {studentExp !== null ? `${studentExp.toFixed(1)}/10` : "No ratings yet"}
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Category / Dimension Chips */}
                   <div className="flex items-center gap-1.5 mt-3 flex-wrap">
@@ -120,9 +134,13 @@ export const FeaturedColleges: React.FC<FeaturedCollegesProps> = ({
                         {tag}
                       </span>
                     ))}
-                    {college.total_submitted_sessions > 0 && (
-                      <span className="text-[10px] font-mono text-charcoal-muted ml-auto hidden xs:inline">
-                        {college.total_submitted_sessions} reviews
+                    {college.total_submitted_sessions > 0 ? (
+                      <span className="text-[10px] font-mono text-charcoal-muted ml-auto">
+                        {college.total_submitted_sessions} review{college.total_submitted_sessions !== 1 ? "s" : ""}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-charcoal-muted ml-auto italic">
+                        Awaiting reviews
                       </span>
                     )}
                   </div>

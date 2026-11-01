@@ -1,12 +1,13 @@
 import React from "react";
-import { ArrowLeft, Bookmark, Share2, Star } from "lucide-react";
-import type { CollegeDetail as CollegeDetailType } from "../../../types/college";
-import { getCollegePhoto } from "../CollegeCard";
+import { ArrowLeft, Bookmark, Share2 } from "lucide-react";
+import type { CollegeDetail as CollegeDetailType, CollegeRatingReport } from "../../../types/college";
+import { getCollegePhoto, getStudentExperienceAverage } from "../CollegeCard";
 import type { InstitutionalDossier } from "../collegeDossierData";
 
 interface CollegeHeaderProps {
   college: CollegeDetailType;
   dossier: InstitutionalDossier | null;
+  report?: CollegeRatingReport | null;
   onBack: () => void;
   onRate?: (collegeId: string) => void;
   onCompare?: () => void;
@@ -14,15 +15,11 @@ interface CollegeHeaderProps {
 
 export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
   college,
+  report,
   onBack,
 }) => {
   const photoUrl = getCollegePhoto(college);
-
-  const formatScore = (score: number) => {
-    if (score >= 90) return (score / 10).toFixed(1);
-    if (score >= 10) return (score / 10).toFixed(1);
-    return score.toFixed(1);
-  };
+  const studentExp = getStudentExperienceAverage(college, report);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -40,7 +37,7 @@ export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
 
   return (
     <header className="mb-4">
-      {/* Edge-to-Edge Hero Photograph (Matches Reference Image 1 Screen 5 & Image 2 Screen 6) */}
+      {/* Edge-to-Edge Hero Photograph */}
       <div className="relative aspect-[16/11] sm:aspect-[16/9] w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-warm-grey bg-warm-grey-light shadow-card select-none">
         <img
           src={photoUrl}
@@ -49,7 +46,7 @@ export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
         />
 
         {/* Gradient Overlay for Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30 pointer-events-none" />
 
         {/* Top Floating Controls: Back Circle & Action Circles */}
         <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between z-10">
@@ -81,8 +78,8 @@ export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
           </div>
         </div>
 
-        {/* Bottom Overlaid Metadata: Name, Location & Floating Score Pill */}
-        <div className="absolute bottom-4 inset-x-4 flex items-end justify-between gap-3 z-10 text-white">
+        {/* Bottom Overlaid Metadata: Name, Location & Dual Score Badges */}
+        <div className="absolute bottom-4 inset-x-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3 z-10 text-white">
           <div className="min-w-0 flex-1">
             <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-white drop-shadow-md">
               {college.name}
@@ -92,17 +89,25 @@ export const CollegeHeader: React.FC<CollegeHeaderProps> = ({
             </p>
           </div>
 
-          {/* Floating Score Pill (Matches Reference Image 1 Screen 5) */}
-          {college.total_submitted_sessions > 0 ? (
-            <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-charcoal font-mono font-bold text-sm shadow-md border border-white/40">
-              <span>{formatScore(college.current_score)}</span>
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+          {/* Dual Score Badges on Hero */}
+          <div className="shrink-0 flex items-center gap-2">
+            <div className="flex flex-col items-start px-3 py-1.5 rounded-xl bg-charcoal/90 backdrop-blur-md text-paper border border-white/20 shadow-md">
+              <span className="text-[9px] uppercase tracking-wider font-mono opacity-80 leading-none">
+                Campus Uncut Score
+              </span>
+              <span className="font-mono font-bold text-sm leading-tight text-white mt-0.5">
+                {college.current_score}/100
+              </span>
             </div>
-          ) : (
-            <div className="shrink-0 flex items-center px-3 py-1.5 rounded-full bg-paper/95 backdrop-blur-md text-charcoal-muted font-mono font-semibold text-xs shadow-md border border-warm-grey">
-              <span>Unrated</span>
+            <div className="flex flex-col items-start px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-charcoal border border-white/40 shadow-md">
+              <span className="text-[9px] uppercase tracking-wider font-mono text-charcoal-muted leading-none">
+                Student Experience
+              </span>
+              <span className={`font-mono font-bold text-sm leading-tight mt-0.5 ${studentExp !== null ? "text-olive-dark" : "text-charcoal-muted"}`}>
+                {studentExp !== null ? `${studentExp.toFixed(1)}/10` : "No ratings yet"}
+              </span>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </header>

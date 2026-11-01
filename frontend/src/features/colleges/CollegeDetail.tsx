@@ -190,6 +190,7 @@ export const CollegeDetail: React.FC<CollegeDetailProps> = ({
       <CollegeHeader
         college={college}
         dossier={dossier}
+        report={report}
         onBack={onBack}
         onRate={onRate}
         onCompare={() => handleScrollToSection("college-comparison")}

@@ -406,7 +406,18 @@ export function getCollegeCardTags(college: CollegeSummary): string[] {
   return list;
 }
 
+export {
+  BASE_INSTITUTIONAL_SCORE,
+  THRESHOLD_BLOCK_SIZE,
+  calculateStudentOverallRating,
+  calculateCollegeStudentExperienceAverage,
+  classifyRatingCategory,
+  getStudentExperienceAverage,
+  formatInstitutionalScore,
+  formatStudentExperience,
+  formatParameterRating,
+} from "../../lib/scoring.ts";
+
 export function formatCollegeScore(score: number): string {
-  if (score >= 10) return (score / 10).toFixed(1);
-  return score.toFixed(1);
+  return `${Math.round(score)}/100`;
 }

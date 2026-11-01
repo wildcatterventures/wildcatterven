@@ -35,6 +35,8 @@ class CollegeSummary(BaseModel):
     alumni_submissions: int = 0
     email_domains: Optional[str] = None
     created_at: Optional[datetime] = None
+    category: Optional[str] = None
+    student_experience_average: Optional[float] = None
 
 
 
@@ -76,3 +78,5 @@ class CollegeRatingReport(BaseModel):
     current_student_submissions: int = 0
     alumni_submissions: int = 0
     parameters: List[ParameterRating] = []
+    category: Optional[str] = None
+    student_experience_average: Optional[float] = None

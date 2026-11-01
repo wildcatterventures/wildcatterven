@@ -4,16 +4,15 @@ import {
   Building2,
   Calendar,
   MapPin,
-  ExternalLink,
   Globe,
   ChevronRight,
-  Star,
+  ExternalLink,
 } from "lucide-react";
 import type { CollegeDetail as CollegeDetailType, CollegeRatingReport } from "../../../types/college";
 import type { InstitutionalDossier } from "../collegeDossierData";
 import { openExternalUrl, isNativePlatform } from "../../../lib/externalLinks";
 import { THEMATIC_CATEGORIES } from "../CollegeDetail";
-import { getCollegeCategory, getCategoryLabel } from "../collegeCategories";
+import { getCollegeCategory, getCategoryLabel, getStudentExperienceAverage } from "../CollegeCard";
 
 interface CollegeGlanceAndHighlightsProps {
   college: CollegeDetailType;
@@ -36,24 +35,15 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
     const cat = THEMATIC_CATEGORIES.find((c) => c.id === catId);
     if (!cat) return "—";
     const catParams = report.parameters.filter((p) => cat.parameterKeys.includes(p.parameter_key));
-    const scored = catParams.filter((p) => p.average_score !== null);
+    const scored = catParams.filter((p) => p.average_score !== null && p.numeric_response_count > 0);
     if (scored.length === 0) return "—";
     const avg = scored.reduce((sum, p) => sum + (p.average_score || 0), 0) / scored.length;
     return avg.toFixed(1);
   };
 
-  const hasRatings = college.total_submitted_sessions > 0;
-
-  const formatOverall = (score: number) => {
-    if (score >= 90) return (score / 10).toFixed(1);
-    if (score >= 10) return (score / 10).toFixed(1);
-    return score.toFixed(1);
-  };
-
-  const overallRating = hasRatings ? formatOverall(college.current_score) : "Unrated";
-  const placementsScore = getCategoryAvg("career_governance") !== "—" ? getCategoryAvg("career_governance") : (hasRatings ? (college.current_score / 10).toFixed(1) : "—");
-  const academicsScore = getCategoryAvg("academics") !== "—" ? getCategoryAvg("academics") : (hasRatings ? (college.current_score / 10).toFixed(1) : "—");
-  const campusLifeScore = getCategoryAvg("living") !== "—" ? getCategoryAvg("living") : (hasRatings ? (college.current_score / 10).toFixed(1) : "—");
+  const studentExp = getStudentExperienceAverage(college, report);
+  const academicsAvg = getCategoryAvg("academics");
+  const campusLifeAvg = getCategoryAvg("living");
 
   return (
     <section id="overview" className="mb-8 space-y-5">
@@ -135,30 +125,29 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
           <ChevronRight className="w-4 h-4 text-charcoal-muted" />
         </div>
 
-        {/* 4 Circular / Pill Metric Highlights */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 text-center">
+        {/* 4 Metric Highlight Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center">
           <div className="p-2 sm:p-2.5 rounded-xl bg-paper border border-warm-grey/60">
-            <div className="font-serif text-base sm:text-lg font-bold text-charcoal flex items-center justify-center gap-0.5">
-              <span>{overallRating}</span>
-              {hasRatings && <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />}
+            <div className="font-mono text-sm sm:text-base font-bold text-charcoal">
+              {college.current_score}/100
             </div>
             <div className="text-[10px] text-charcoal-muted mt-0.5 font-sans leading-tight">
-              Overall Rating
+              Campus Uncut Score
             </div>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-paper border border-warm-grey/60">
-            <div className="font-serif text-base sm:text-lg font-bold text-charcoal">
-              {placementsScore}
+            <div className={`font-mono text-sm sm:text-base font-bold ${studentExp !== null ? "text-olive-dark" : "text-charcoal-muted"}`}>
+              {studentExp !== null ? `${studentExp.toFixed(1)}/10` : "No ratings yet"}
             </div>
             <div className="text-[10px] text-charcoal-muted mt-0.5 font-sans leading-tight">
-              Placements
+              Student Experience
             </div>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-paper border border-warm-grey/60">
-            <div className="font-serif text-base sm:text-lg font-bold text-charcoal">
-              {academicsScore}
+            <div className="font-mono text-sm sm:text-base font-bold text-charcoal">
+              {academicsAvg !== "—" ? `${academicsAvg}/10` : "Not rated yet"}
             </div>
             <div className="text-[10px] text-charcoal-muted mt-0.5 font-sans leading-tight">
               Academics
@@ -166,8 +155,8 @@ export const CollegeGlanceAndHighlights: React.FC<CollegeGlanceAndHighlightsProp
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-paper border border-warm-grey/60">
-            <div className="font-serif text-base sm:text-lg font-bold text-charcoal">
-              {campusLifeScore}
+            <div className="font-mono text-sm sm:text-base font-bold text-charcoal">
+              {campusLifeAvg !== "—" ? `${campusLifeAvg}/10` : "Not rated yet"}
             </div>
             <div className="text-[10px] text-charcoal-muted mt-0.5 font-sans leading-tight">
               Campus Life

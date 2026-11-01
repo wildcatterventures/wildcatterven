@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MapPin, ArrowRight, Star, ChevronRight } from "lucide-react";
+import { MapPin, ArrowRight, ChevronRight } from "lucide-react";
 import type { CollegeSummary } from "../../types/college";
 import {
   getCollegePhoto,
@@ -8,6 +8,10 @@ import {
   formatCollegeScore,
   getCollegeCategory,
   getCategoryLabel,
+  getStudentExperienceAverage,
+  formatInstitutionalScore,
+  formatStudentExperience,
+  formatParameterRating,
 } from "./collegeCategories";
 import type { CollegeMetadata } from "./collegeCategories";
 
@@ -18,6 +22,10 @@ export {
   formatCollegeScore,
   getCollegeCategory,
   getCategoryLabel,
+  getStudentExperienceAverage,
+  formatInstitutionalScore,
+  formatStudentExperience,
+  formatParameterRating,
 };
 export type { CollegeMetadata };
 
@@ -33,7 +41,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
   const isDemo = Boolean(college.is_demo || college.name.toLowerCase().includes("(demo)"));
   const facts = INSTITUTIONAL_FACTS[college.short_code?.toUpperCase() || ""];
   const tags = getCollegeCardTags(college);
-  const scoreFormatted = formatCollegeScore(college.current_score);
+  const studentExp = getStudentExperienceAverage(college);
 
   return (
     <article
@@ -45,7 +53,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
           onSelect(college.college_id);
         }
       }}
-      className={`group cursor-pointer bg-card border rounded-2xl transition-all duration-200 hover:shadow-card hover:border-charcoal/40 select-none overflow-hidden flex flex-row md:flex-col items-center md:items-stretch p-3 sm:p-3.5 md:p-0 gap-3 sm:gap-3.5 md:gap-0 min-h-[120px] max-h-[155px] md:min-h-0 md:max-h-none ${
+      className={`group cursor-pointer bg-card border rounded-2xl transition-all duration-200 hover:shadow-card hover:border-charcoal/40 select-none overflow-hidden flex flex-row md:flex-col items-center md:items-stretch p-3 sm:p-3.5 md:p-0 gap-3 sm:gap-3.5 md:gap-0 min-h-[135px] max-h-[175px] md:min-h-0 md:max-h-none ${
         isDemo ? "border-amber-300/80" : "border-warm-grey"
       } focus:outline-none focus-visible:ring-2 focus-visible:ring-olive`}
     >
@@ -73,16 +81,9 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
                 Demo
               </span>
             )}
-            {hasRatings ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-md text-charcoal font-mono text-xs font-bold border border-white/40 shadow-xs">
-                <span>{scoreFormatted}</span>
-                <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-md bg-paper/90 backdrop-blur-md text-charcoal-muted font-mono text-[10px] font-semibold border border-warm-grey shadow-xs">
-                Unrated
-              </span>
-            )}
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-md text-charcoal font-mono text-xs font-bold border border-white/40 shadow-xs">
+              Score {college.current_score}/100
+            </span>
           </div>
         </div>
       </div>
@@ -90,7 +91,7 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
       {/* 2. Right Content on Mobile / Bottom Body on Desktop */}
       <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5 md:p-5">
         <div>
-          {/* Top Line: College Name + Mobile Rating Badge */}
+          {/* Top Line: College Name */}
           <div className="flex items-start justify-between gap-2">
             <h3
               className="font-serif text-sm sm:text-base md:text-lg font-bold text-charcoal leading-snug group-hover:text-olive transition-colors line-clamp-2 break-words"
@@ -98,26 +99,32 @@ export const CollegeCard: React.FC<CollegeCardProps> = ({ college, onSelect, onR
             >
               {college.name}
             </h3>
-
-            {/* Mobile-Only Rating Badge on Top Right */}
-            <div className="md:hidden shrink-0 ml-1 self-start">
-              {hasRatings ? (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/90 text-amber-900 font-mono text-xs font-bold shadow-2xs">
-                  <span>{scoreFormatted}</span>
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                </div>
-              ) : (
-                <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-warm-grey-light border border-warm-grey text-charcoal-muted font-mono text-[10px] font-semibold">
-                  <span>New</span>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Location Line */}
           <div className="flex items-center gap-1 text-xs text-charcoal-muted mt-1 font-sans">
             <MapPin className="w-3.5 h-3.5 text-olive shrink-0" />
             <span className="truncate">{college.city}, {college.state}</span>
+          </div>
+
+          {/* Dual Score Presentation (Campus Uncut Score /100 & Student Experience /10) */}
+          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-warm-grey/60 text-xs font-sans">
+            <div className="p-1.5 rounded-lg bg-warm-grey-light/50 border border-warm-grey/40">
+              <div className="text-[9px] uppercase tracking-wider text-charcoal-muted font-mono font-medium truncate">
+                Score
+              </div>
+              <div className="font-mono font-bold text-charcoal text-xs sm:text-sm">
+                {college.current_score}/100
+              </div>
+            </div>
+            <div className="p-1.5 rounded-lg bg-warm-grey-light/50 border border-warm-grey/40">
+              <div className="text-[9px] uppercase tracking-wider text-charcoal-muted font-mono font-medium truncate">
+                Student Exp.
+              </div>
+              <div className={`font-mono font-bold text-xs sm:text-sm truncate ${studentExp !== null ? "text-olive-dark" : "text-charcoal-muted"}`}>
+                {studentExp !== null ? `${studentExp.toFixed(1)}/10` : "No ratings yet"}
+              </div>
+            </div>
           </div>
 
           {/* Desktop Description */}

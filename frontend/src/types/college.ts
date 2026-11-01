@@ -14,6 +14,7 @@ export interface CollegeSummary {
   alumni_submissions: number;
   email_domains?: string | null;
   created_at?: string;
+  student_experience_average?: number | null;
 }
 
 export interface CollegeDetail extends CollegeSummary {
@@ -44,12 +45,14 @@ export interface CollegeRatingReport {
   college_id: string;
   name: string;
   short_code: string;
+  category?: CollegeCategory | string;
   is_demo: boolean;
   current_score: number;
   total_submitted_sessions: number;
   current_student_submissions: number;
   alumni_submissions: number;
   parameters: ParameterRating[];
+  student_experience_average?: number | null;
 }
 
 export interface CreateCollegeRequest {

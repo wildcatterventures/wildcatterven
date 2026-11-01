@@ -6,7 +6,6 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquareQuote,
-  Star,
   Heart,
 } from "lucide-react";
 import type {
@@ -14,6 +13,7 @@ import type {
   CollegeRatingReport,
 } from "../../../types/college";
 import { THEMATIC_CATEGORIES } from "../CollegeDetail";
+import { getStudentExperienceAverage } from "../CollegeCard";
 import { SplitVerdictCard } from "./SplitVerdictCard";
 import { analyzeSplitVerdict } from "../../../lib/splitVerdict";
 
@@ -200,65 +200,105 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
     );
   }
 
-  const formatOverall = (score: number) => {
-    if (score >= 90) return (score / 10).toFixed(1);
-    if (score >= 10) return (score / 10).toFixed(1);
-    return score.toFixed(1);
-  };
-  const overallFormatted = formatOverall(college.current_score);
-
-  // Compute 5-tier distribution percentages
-  const totalDistVotes = aggregateDistribution.totalVotes || 1;
-  const f = aggregateDistribution.freqByScore;
-  const star5Pct = aggregateDistribution.totalVotes > 0 ? ((f[9] + f[10]) / totalDistVotes) * 100 : 52;
-  const star4Pct = aggregateDistribution.totalVotes > 0 ? ((f[7] + f[8]) / totalDistVotes) * 100 : 28;
-  const star3Pct = aggregateDistribution.totalVotes > 0 ? ((f[5] + f[6]) / totalDistVotes) * 100 : 12;
-  const star2Pct = aggregateDistribution.totalVotes > 0 ? ((f[3] + f[4]) / totalDistVotes) * 100 : 5;
-  const star1Pct = aggregateDistribution.totalVotes > 0 ? ((f[1] + f[2]) / totalDistVotes) * 100 : 3;
+  const studentExp = getStudentExperienceAverage(college, report);
+  const scoredParamsCount = report?.parameters
+    ? report.parameters.filter((p) => p.average_score !== null && p.numeric_response_count > 0).length
+    : 0;
 
   return (
     <section id="student-pulse" className="mb-8 sm:mb-10 space-y-6">
-      {/* 1. Overall Score & 5-Bar Distribution Card (Matches Reference Image 1 Screen 6) */}
+      {/* 1. Clear Dual-Score Card: Campus Uncut Score (/100) & Student Experience Average (/10) */}
       <div className="editorial-card p-5 sm:p-6 bg-card border border-warm-grey rounded-2xl shadow-card">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
-          {/* Left Column: Overall Score & Count */}
-          <div className="text-center sm:text-left shrink-0">
-            <div className="font-serif text-4xl sm:text-5xl font-bold text-charcoal flex items-center justify-center sm:justify-start gap-2">
-              <span>{overallFormatted}</span>
-              <Star className="w-6 h-6 text-amber-500 fill-amber-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pb-5 border-b border-warm-grey">
+          {/* Card A: Campus Uncut Institutional Score */}
+          <div className="p-4 rounded-xl bg-paper border border-warm-grey flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted font-bold">
+                  Campus Uncut Score
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-charcoal text-paper font-bold">
+                  Scale: 100
+                </span>
+              </div>
+              <div className="font-mono text-3xl sm:text-4xl font-extrabold text-charcoal mt-2">
+                {college.current_score} <span className="text-sm font-normal text-charcoal-muted">/ 100</span>
+              </div>
+              <p className="text-xs text-charcoal-muted mt-2 leading-relaxed">
+                Initial baseline is 100/100. Institutional score shifts by ±1 for every block of 20 qualifying student evaluations (&lt;4.0 decreases by 1, &ge;8.0 increases by 1).
+              </p>
             </div>
-            <div className="text-xs font-semibold text-charcoal mt-1">
-              Overall Rating
-            </div>
-            <div className="text-[11px] font-mono text-charcoal-muted mt-0.5">
-              {college.total_submitted_sessions > 0
-                ? `${college.total_submitted_sessions} authenticated reviews`
-                : "1,248 reviews"}
+            <div className="mt-3 pt-2.5 border-t border-warm-grey/60 flex items-center justify-between text-[11px] font-mono text-charcoal-muted">
+              <span>Threshold Progress:</span>
+              <span className="font-semibold text-charcoal">
+                {college.total_submitted_sessions % 20}/20 towards next block
+              </span>
             </div>
           </div>
 
-          {/* Right Column: 5-Row Star Distribution Bars */}
-          <div className="w-full max-w-xs space-y-1.5 font-mono text-xs">
-            {[
-              { star: 5, pct: star5Pct },
-              { star: 4, pct: star4Pct },
-              { star: 3, pct: star3Pct },
-              { star: 2, pct: star2Pct },
-              { star: 1, pct: star1Pct },
-            ].map((row) => (
-              <div key={row.star} className="flex items-center gap-2">
-                <span className="w-3 text-charcoal-muted text-[11px]">{row.star}</span>
-                <div className="flex-1 h-2 rounded-full bg-warm-grey-light overflow-hidden">
-                  <div
-                    className="h-full bg-charcoal rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(row.pct, 2)}%` }}
-                  />
-                </div>
-                <span className="w-8 text-right text-charcoal-muted text-[10px]">
-                  {row.pct.toFixed(0)}%
+          {/* Card B: Student Experience Average */}
+          <div className="p-4 rounded-xl bg-paper border border-warm-grey flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-charcoal-muted font-bold">
+                  Student Experience
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-olive text-paper font-bold">
+                  Scale: 1–10
                 </span>
               </div>
-            ))}
+              <div className="font-mono text-3xl sm:text-4xl font-extrabold text-charcoal mt-2">
+                {studentExp !== null ? (
+                  <>
+                    {studentExp.toFixed(1)}{" "}
+                    <span className="text-sm font-normal text-charcoal-muted">/ 10</span>
+                  </>
+                ) : (
+                  <span className="text-xl sm:text-2xl font-serif font-bold text-charcoal-muted">
+                    No ratings yet
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-charcoal-muted mt-2 leading-relaxed">
+                Arithmetic mean across submitted rating sessions by verified students and alumni. "No View" answers are strictly excluded.
+              </p>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-warm-grey/60 flex items-center justify-between text-[11px] font-mono text-charcoal-muted">
+              <span>Evaluated Parameters:</span>
+              <span className="font-semibold text-charcoal">
+                {scoredParamsCount}/25 parameters rated
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Submissions Breakdown: Total, Current Students, Alumni */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 text-center">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-warm-grey-light/50 border border-warm-grey/40">
+            <div className="font-mono text-base sm:text-lg font-bold text-charcoal">
+              {college.total_submitted_sessions}
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-charcoal-muted mt-0.5 font-sans leading-tight">
+              Total Authenticated Reviews
+            </div>
+          </div>
+
+          <div className="p-2 sm:p-2.5 rounded-lg bg-warm-grey-light/50 border border-warm-grey/40">
+            <div className="font-mono text-base sm:text-lg font-bold text-charcoal">
+              {college.current_student_submissions}
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-charcoal-muted mt-0.5 font-sans leading-tight">
+              Current Students
+            </div>
+          </div>
+
+          <div className="p-2 sm:p-2.5 rounded-lg bg-warm-grey-light/50 border border-warm-grey/40">
+            <div className="font-mono text-base sm:text-lg font-bold text-charcoal">
+              {college.alumni_submissions}
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-charcoal-muted mt-0.5 font-sans leading-tight">
+              Alumni Submissions
+            </div>
           </div>
         </div>
       </div>
@@ -299,7 +339,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               name: "Anonymous Student",
               degree: "B.Tech • 2024",
               date: "2 weeks ago",
-              rating: "4.5",
+              rating: "9.0/10",
               text: "Amazing academic environment and great opportunities. The campus life is vibrant and the peer group is excellent. Placements are really strong in core and tech roles.",
             },
             {
@@ -308,7 +348,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               name: "Riya S.",
               degree: "B.Tech • 2025",
               date: "2 weeks ago",
-              rating: "4.5",
+              rating: "8.8/10",
               text: "Laboratory facilities and computing resources are modern. The hostel rooms are well-maintained with high-speed internet, and academic scheduling is well-organized.",
             },
             {
@@ -317,7 +357,7 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
               name: "Alumnus Contributor",
               degree: "M.Tech • 2023",
               date: "1 month ago",
-              rating: "4.0",
+              rating: "8.2/10",
               text: "Great placement support and faculty mentorship. Industry partnerships bring top recruiters to campus every placement cycle with strong compensation.",
             },
           ].map((rev) => {
@@ -349,13 +389,10 @@ export const StudentPulse: React.FC<StudentPulseProps> = ({
                   </span>
                 </div>
 
-                {/* Star Rating */}
-                <div className="flex items-center gap-1 text-amber-500">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  ))}
-                  <span className="font-mono font-bold text-xs text-charcoal ml-1">
-                    {rev.rating}
+                {/* Rating Badge (/10 scale, no stars) */}
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-olive-light/70 text-olive-dark font-mono font-semibold text-[11px] border border-olive/20">
+                    Student Rating: {rev.rating}
                   </span>
                 </div>
 

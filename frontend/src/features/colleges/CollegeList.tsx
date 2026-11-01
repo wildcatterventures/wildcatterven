@@ -14,7 +14,7 @@ import {
 import { api } from "../../lib/api";
 import { isSpeechRecognitionSupported, startSpeechSession, SpeechSessionController, SpeechState } from "../../lib/voice";
 import type { CollegeSummary } from "../../types/college";
-import { CollegeCard, INSTITUTIONAL_FACTS } from "./CollegeCard";
+import { CollegeCard, INSTITUTIONAL_FACTS, getStudentExperienceAverage } from "./CollegeCard";
 import { getCollegeCategory, CATEGORY_FILTER_OPTIONS } from "./collegeCategories";
 
 interface CollegeListProps {
@@ -234,9 +234,15 @@ export const CollegeList: React.FC<CollegeListProps> = ({
       result = result.filter((c) => c.total_submitted_sessions === 0);
     }
 
-    // Sub-tab logic (Matches Reference Image 1 Screen 4)
+    // Sub-tab logic
     if (activeSubTab === "top_rated") {
-      result.sort((a, b) => b.current_score - a.current_score);
+      result.sort((a, b) => {
+        if (b.current_score !== a.current_score) return b.current_score - a.current_score;
+        const avgB = getStudentExperienceAverage(b) ?? -1;
+        const avgA = getStudentExperienceAverage(a) ?? -1;
+        if (avgB !== avgA) return avgB - avgA;
+        return b.total_submitted_sessions - a.total_submitted_sessions;
+      });
     } else if (activeSubTab === "trending") {
       result.sort((a, b) => b.total_submitted_sessions - a.total_submitted_sessions);
     } else if (activeSubTab === "near_you") {
@@ -246,7 +252,12 @@ export const CollegeList: React.FC<CollegeListProps> = ({
     } else {
       // Manual Sort By
       if (sortBy === "score_high") {
-        result.sort((a, b) => b.current_score - a.current_score);
+        result.sort((a, b) => {
+          if (b.current_score !== a.current_score) return b.current_score - a.current_score;
+          const avgB = getStudentExperienceAverage(b) ?? -1;
+          const avgA = getStudentExperienceAverage(a) ?? -1;
+          return avgB - avgA;
+        });
       } else if (sortBy === "sessions_high") {
         result.sort((a, b) => b.total_submitted_sessions - a.total_submitted_sessions);
       }

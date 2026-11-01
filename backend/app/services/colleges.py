@@ -53,7 +53,8 @@ async def search_colleges(
         SELECT 
             college_id, name, short_code, city, state, is_demo,
             current_score, total_submitted_sessions,
-            current_student_submissions, alumni_submissions, email_domains, created_at
+            current_student_submissions, alumni_submissions, email_domains, created_at,
+            category, student_experience_average
         FROM v_college_summary
         {where_sql}
         ORDER BY is_demo ASC, name ASC;
@@ -85,7 +86,8 @@ async def get_college_by_id(
             college_id, name, short_code, city, state, is_demo,
             current_score, total_qualifying_low, total_qualifying_neutral,
             total_qualifying_high, last_event_at, total_submitted_sessions,
-            current_student_submissions, alumni_submissions, email_domains, created_at
+            current_student_submissions, alumni_submissions, email_domains, created_at,
+            category, student_experience_average
         FROM v_college_summary
         WHERE college_id = $1;
     """
@@ -233,6 +235,8 @@ async def get_college_ratings(
         current_student_submissions=college.current_student_submissions,
         alumni_submissions=college.alumni_submissions,
         parameters=parameter_ratings,
+        category=college.category,
+        student_experience_average=college.student_experience_average,
     )
 
 

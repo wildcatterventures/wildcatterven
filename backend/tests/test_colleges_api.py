@@ -174,3 +174,87 @@ async def test_search_succeeds_even_if_search_logging_fails(client: AsyncClient,
     data = resp.json()
     assert len(data) >= 1
 
+
+@pytest.mark.asyncio
+async def test_colleges_endpoints_expose_student_experience_average_and_category(client: AsyncClient):
+    """Verify CollegeSummary, CollegeDetail, and CollegeRatingReport expose student_experience_average and category."""
+    # 1. Directory listing (GET /api/colleges)
+    resp = await client.get("/api/colleges")
+    assert resp.status_code == 200
+    colleges = resp.json()
+    assert len(colleges) >= 1
+    sfit = next(c for c in colleges if c["short_code"] == "SFIT")
+    assert sfit["current_score"] == 100
+    assert sfit["category"] == "engineering"
+    assert sfit["total_submitted_sessions"] == 0
+    assert sfit["student_experience_average"] is None
+
+    # 2. Detail profile (GET /api/colleges/{id})
+    resp_detail = await client.get(f"/api/colleges/{SFIT_ID}")
+    assert resp_detail.status_code == 200
+    detail = resp_detail.json()
+    assert detail["current_score"] == 100
+    assert detail["category"] == "engineering"
+    assert detail["student_experience_average"] is None
+
+    # 3. Ratings report (GET /api/colleges/{id}/ratings)
+    resp_report = await client.get(f"/api/colleges/{SFIT_ID}/ratings")
+    assert resp_report.status_code == 200
+    report = resp_report.json()
+    assert report["current_score"] == 100
+    assert report["category"] == "engineering"
+    assert report["student_experience_average"] is None
+
+
+@pytest.mark.asyncio
+async def test_college_endpoints_calculate_dynamic_student_experience_when_sessions_exist(
+    client: AsyncClient,
+    mock_db_state,
+):
+    """Verify submitted session ratings calculate actual AVG(calculated_overall_rating)."""
+    from uuid import uuid4
+
+    # Inject two submitted rating sessions for SFIT (8.5 and 7.5 -> mean = 8.00)
+    sess_id_1 = str(uuid4())
+    sess_id_2 = str(uuid4())
+    mock_db_state["rating_sessions"][sess_id_1] = {
+        "id": sess_id_1,
+        "college_id": SFIT_ID,
+        "respondent_id": str(uuid4()),
+        "respondent_role": "current_student",
+        "status": "submitted",
+        "calculated_overall_rating": 8.5,
+    }
+    mock_db_state["rating_sessions"][sess_id_2] = {
+        "id": sess_id_2,
+        "college_id": SFIT_ID,
+        "respondent_id": str(uuid4()),
+        "respondent_role": "alumnus",
+        "status": "submitted",
+        "calculated_overall_rating": 7.5,
+    }
+
+    # 1. Directory listing
+    resp = await client.get("/api/colleges")
+    assert resp.status_code == 200
+    sfit = next(c for c in resp.json() if c["short_code"] == "SFIT")
+    assert sfit["total_submitted_sessions"] == 2
+    assert sfit["current_student_submissions"] == 1
+    assert sfit["alumni_submissions"] == 1
+    assert sfit["current_score"] == 100
+    assert sfit["student_experience_average"] == 8.0
+
+    # 2. Detail profile
+    resp_detail = await client.get(f"/api/colleges/{SFIT_ID}")
+    assert resp_detail.status_code == 200
+    detail = resp_detail.json()
+    assert detail["student_experience_average"] == 8.0
+    assert detail["current_score"] == 100
+
+    # 3. Ratings report
+    resp_report = await client.get(f"/api/colleges/{SFIT_ID}/ratings")
+    assert resp_report.status_code == 200
+    report = resp_report.json()
+    assert report["student_experience_average"] == 8.0
+
+
