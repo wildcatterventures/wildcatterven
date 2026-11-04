@@ -260,3 +260,120 @@ POST /api/v1/rating-sessions/{id}/submit # Transactionally finalize and recalcul
 POST /api/v1/assistant/chat
 ```
 * Accepts natural language queries. Uses tool-calling to fetch database facts and returns synthesized, factual intelligence dossiers.
+
+
+---
+
+## 💻 Local Development Setup
+
+### Prerequisites
+* **Node.js:** v18.0.0 or higher & `npm`
+* **Python:** v3.11+
+* **JDK:** OpenJDK 21 (required for Android Gradle Plugin 8.13+ / Gradle 8.14)
+* **Android Studio:** Android Studio Ladybug (or newer) with Android SDK Platform 36
+
+### 1. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+* **Local Dev Server:** `http://localhost:5173`
+* **Configuration:** Create `frontend/.env.local`:
+  ```env
+  VITE_API_BASE_URL=http://localhost:8000
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-public-anon-key
+  ```
+
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv .venv
+
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+* **Local API Server:** `http://localhost:8000`
+* **Swagger API Docs:** `http://localhost:8000/docs`
+* **Configuration:** Create `backend/.env`:
+  ```env
+  APP_ENV=development
+  SUPABASE_URL=https://your-project.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY=your-secret-service-role-key
+  DATABASE_URL=postgresql://postgres:...@...supabase.co:5432/postgres
+  LLM_PROVIDER=groq
+  GROQ_API_KEY=your-groq-api-key
+  CORS_ORIGINS=http://localhost:5173,https://localhost,https://campus-uncut.vercel.app
+  ```
+
+### 3. Android Capacitor Sync & Studio Build
+```bash
+cd frontend
+npm run build
+npx cap sync android
+```
+* Open `frontend/android` in Android Studio.
+* Build release bundle: `Build` > `Generate Signed Bundle / APK...` > `Android App Bundle`
+* Or command line:
+  ```bash
+  cd frontend/android
+  ./gradlew bundleRelease
+  ```
+* Output bundle path: `frontend/android/app/build/outputs/bundle/release/app-release.aab`
+
+---
+
+## 🧪 Testing & Verification Suite
+
+The repository includes comprehensive backend unit/integration tests and frontend contract verification:
+
+```bash
+# 1. Run Backend Pytest Suite
+cd backend
+pytest -v
+
+# 2. Run Frontend Tests
+cd frontend
+npm test
+
+# 3. Frontend Production Build Check
+npm run build
+```
+
+Key verified test suites:
+* `test_colleges_api.py`: Validates 23-college directory retrieval, stream filters, and dynamic student experience averages.
+* `test_scoring_engine.py`: Verifies the 100-point institutional scoring math, $\pm 1$ threshold increments per 20 respondents, and duplicate submission protections.
+* `test_email_validation.py`: Verifies domain affinity enforcement and institutional email domain validation.
+* `test_ai_agent_safety.py`: Validates tool-calling guardrails and safety filters preventing LLM hallucination of numerical ratings.
+
+---
+
+## 🛡️ Security, Privacy & Google Play Compliance
+
+Campus Uncut was engineered from the ground up to respect user anonymity and student safety:
+
+1. **Zero Device Fingerprinting & No Tracking SDKs:**
+   * **Advertising ID:** The Google Play `com.google.android.gms.permission.AD_ID` permission is strictly **absent** from all source manifests, merged manifests, and release bytecode.
+   * **No Ad Networks:** Zero integrations with AdMob, Meta Audience Network, Adjust, AppsFlyer, or Firebase Analytics.
+   * **Zero Hardware Identifiers:** No collection of IMEI, MAC addresses, GPS locations, or persistent device fingerprints.
+2. **Network Security & Content Security Policy (CSP):**
+   * Runtime CSP blocks third-party trackers, unauthorized scripts, and external beacons.
+   * Strict CORS enforcement on backend endpoints restricts origin access to verified web clients and local development environments.
+3. **Auditable Cryptographic Release Signing:**
+   * **Release Package Name:** `com.wildcatterventures.campusuncut`
+   * **Upload Certificate SHA-1:** `5C:9B:99:80:B1:E8:55:C7:E3:61:0D:B2:AD:79:F8:84:CB:F7:F8:44`
+   * **Upload Certificate SHA-256:** `46:AB:85:2E:82:19:6C:1F:CB:82:82:BA:B4:A7:13:D7:FF:82:49:11:AD:74:E8:5E:EC:BB:70:96:20:4C:6F:C4`
+   * **Target API Level:** Android API 36 (satisfying Google Play 2026+ release standards).
+
+---
+
+## 📄 License & Confidentiality
+
+* **Confidential Prototype.** All rights reserved by Wildcatter Ventures.
+* The source code, assets, and assignment materials are proprietary. Do not publish public mirrors, benchmarks, or unapproved deployments without explicit authorization.
