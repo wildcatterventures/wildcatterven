@@ -365,15 +365,5 @@ Campus Uncut was engineered from the ground up to respect user anonymity and stu
 2. **Network Security & Content Security Policy (CSP):**
    * Runtime CSP blocks third-party trackers, unauthorized scripts, and external beacons.
    * Strict CORS enforcement on backend endpoints restricts origin access to verified web clients and local development environments.
-3. **Auditable Cryptographic Release Signing:**
-   * **Release Package Name:** `com.wildcatterventures.campusuncut`
-   * **Upload Certificate SHA-1:** `5C:9B:99:80:B1:E8:55:C7:E3:61:0D:B2:AD:79:F8:84:CB:F7:F8:44`
-   * **Upload Certificate SHA-256:** `46:AB:85:2E:82:19:6C:1F:CB:82:82:BA:B4:A7:13:D7:FF:82:49:11:AD:74:E8:5E:EC:BB:70:96:20:4C:6F:C4`
-   * **Target API Level:** Android API 36 (satisfying Google Play 2026+ release standards).
 
 ---
-
-## 📄 License & Confidentiality
-
-* **Confidential Prototype.** All rights reserved by Wildcatter Ventures.
-* The source code, assets, and assignment materials are proprietary. Do not publish public mirrors, benchmarks, or unapproved deployments without explicit authorization.
